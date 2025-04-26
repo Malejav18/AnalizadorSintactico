@@ -33,7 +33,6 @@ Como ejemplo prueba tenemos:
 Codigo.py
 ```
 def contains(items:[int ,]
-
 ```
 
 resultado_lexico.txt
