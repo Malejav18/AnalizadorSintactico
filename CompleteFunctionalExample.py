@@ -3,17 +3,45 @@ import re
 
 # Definición de los patrones de tokens para el lexer
 TOKEN_REGEX = [
+    ("DEF", r"def"),
+    ('IF', r'if'),        # Palabras reservadas primero
+    ('RETURN', r'return'),
+    ('EQEQ', r'=='),      # Operadores de comparación de dos caracteres
+    ('NOTEQ', r'!='),     
+    ('LE', r'<='),        
+    ('GE', r'>='),        
+    ('LT', r'<'),         # Luego los de un solo caracter
+    ('GT', r'>'),
+    ('NUM', r'\d+'),
+    ('ID', r"[a-zA-Z_][a-zA-Z_0-9]*"), # ID después de palabras reservadas
+    ('PLUS', r'\+'),
+    ('MINUS', r'-'),
+    ('MUL', r'\*'),
+    ('DIV', r'/'),
+    ('LPAREN', r'\('),
+    ('RPAREN', r'\)'),
+    ('EQUAL', r'='),
+    ('COLON', r':'),
+    ("COMMA", r","),
+    ('SKIP', r'[ \t]+'),
+]
+"""
+# Definición de los patrones de tokens para el lexer
+TOKEN_REGEX = [
+    ("DEF", r"def"),
     ('IF', r'if'),
     ('ELIF', r'elif'),
     ('ELSE', r'else'),
+    ("RETURN", r"return"),
     ('EQEQ', r'=='),
     ('NOTEQ', r'!='),
     ('LE', r'<='),
     ('GE', r'>='),
     ('LT', r'<'),
     ('GT', r'>'),
+    ("COMMA", r","),
     ('NUM', r'\d+'),
-    ('ID', r'[a-zA-Z_]\w*'),
+    ('ID', r"[a-zA-Z_][a-zA-Z_0-9]*"),
     ('PLUS', r'\+'),
     ('MINUS', r'-'),
     ('MUL', r'\*'),
@@ -24,6 +52,7 @@ TOKEN_REGEX = [
     ('COLON', r':'),
     ('SKIP', r'[ \t\n]+'),  # Asegurarse de que los saltos de línea y espacios sean ignorados
 ]
+"""
 
 # Lexer: Convierte el código fuente en una lista de tokens
 def lexer(code):
@@ -44,7 +73,26 @@ def lexer(code):
             raise SyntaxError(f"Caracter inesperado: {code[i]}")
     tokens.append(('EOF', '$'))  # Agregar marcador de fin de entrada
     return tokens
+# Gramática de la producción
+productions = {
+    'stmt': [['assign_stmt'], ['def_stmt'], ['if_stmt'], ['return_stmt']],  # stmt → assign_stmt | def_stmt | if_stmt | return_stmt
+    'def_stmt': [['DEF', 'ID', 'LPAREN', 'param_list', 'RPAREN', 'COLON', 'stmt']],  # Definición de función
+    "param_list": [["ID", "param_list_rest"],[]], # param_list → ID param_list_rest | ε
+    "param_list_rest": [["COMMA", "ID", "param_list_rest"], []], # param_list_rest → , ID param_list_rest | ε
+    'return_stmt': [['RETURN', 'expr']],  # Instrucción de retorno
+    'assign_stmt': [['ID', 'EQUAL', 'expr']],
+    'if_stmt': [['IF', 'condition', 'COLON', 'stmt']],  # luego del IF ejecuta un stmt (otra asignación o un if anidado)
+    
+    'condition': [['expr', 'comp_op', 'expr']],
+    'comp_op': [['EQEQ'], ['NOTEQ'], ['LT'], ['GT'], ['LE'], ['GE']],
+    'expr': [['term', 'expr_']],
+    'expr_': [['PLUS', 'term', 'expr_'], ['MINUS', 'term', 'expr_'], []],
+    'term': [['factor', 'term_']],
+    'term_': [['MUL', 'factor', 'term_'], ['DIV', 'factor', 'term_'], []],
+    'factor': [['LPAREN', 'expr', 'RPAREN'], ['ID'], ['NUM']],
+}
 
+"""
 # Gramática de la producción
 productions = {
     'stmt': [['assign_stmt'], ['if_stmt']],  # stmt → assign_stmt | if_stmt
@@ -55,6 +103,9 @@ productions = {
         ['ELSE', 'COLON', 'stmt'],  # elif_else → ELSE : stmt
         []  # elif_else → ε
     ],
+    "function_def": ["DEF", "ID", "LPAREN", "param_list", "RPAREN", "COLON", "stmt"], # function_def → DEF ID ( param_list ) : stmt_list
+    "param_list": ["ID", "param_list_rest", "ε"], # param_list → ID param_list_rest | ε
+    "param_list_rest": ["COMMA", "ID", "param_list_rest", "ε"], # param_list_rest → , ID param_list_rest | ε
     'condition': [['expr', 'comp_op', 'expr']],  # condition → expr comp_op expr
     'comp_op': [['EQEQ'], ['NOTEQ'], ['LE'], ['GE'], ['LT'], ['GT']],  # comp_op → == | != | <= | >= | < | >
     'expr': [['term', 'expr_']],  # expr → term expr_
@@ -63,6 +114,10 @@ productions = {
     'term_': [['MUL', 'factor', 'term_'], ['DIV', 'factor', 'term_'], []],  # term_ → * factor term_ | / factor term_ | ε
     'factor': [['LPAREN', 'expr', 'RPAREN'], ['ID'], ['NUM']],  # factor → ( expr ) | ID | NUM
 }
+
+
+"""
+
 
 # Conjunto de no terminales
 non_terminals = set(productions.keys())
@@ -146,7 +201,6 @@ def build_predict_table(first, follow):
             for terminal in rule_first:
                 if terminal != 'ε':
                     table[nt][terminal] = rule
-            # Si la regla tiene ε, agregar los elementos de FOLLOW
             if 'ε' in rule_first:
                 for terminal in follow[nt]:
                     table[nt][terminal] = rule
@@ -202,7 +256,7 @@ class LL1Interpreter:
         return self.current_token() == 'EOF'  # Verificar si se consumió toda la entrada
 
 # Código de entrada
-code = "if a == b: x = 1 elif a < b: x = 2 else: x = 3"
+code = "def an(a,b,c): return x*2"
 tokens = lexer(code)  # Convertir el código en tokens
 
 first = compute_first()  # Calcular FIRST
