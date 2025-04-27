@@ -18,6 +18,7 @@ TOKEN_REGEX = [
     ('RANGE', r'range'),
     ('RETURN', r'return'),
     ('PRINT', r'print'),
+    ('CLASS', r'class'),
     ('EQEQ', r'=='),      
     ('NOTEQ', r'!='),     
     ('LE', r'<='),        
@@ -68,13 +69,18 @@ def lexer(code):
     return tokens
 # Gramática de la producción
 productions = {
-    'stmt': [['assign_stmt'], ['def_stmt'], ['if_stmt'], ['return_stmt'], ['while_stmt'], ['for_stmt'], ['print_stmt'], ['import_stmt']],  # stmt → assign_stmt | def_stmt | if_stmt | return_stmt
+    'stmt': [['assign_stmt'], ['def_stmt'], ['if_stmt'], ['return_stmt'], ['while_stmt'], ['for_stmt'], ['print_stmt'], ['import_stmt'], ['class_stmt']],  # stmt → assign_stmt | def_stmt | if_stmt | return_stmt
     'def_stmt': [['DEF', 'ID', 'LPAREN', 'param_list', 'RPAREN', 'COLON', 'stmt']],  # Definición de función
     "param_list": [["ID", "param_list_rest"],[]], # param_list → ID param_list_rest | ε
     "param_list_rest": [["COMMA", "ID", "param_list_rest"], []], # param_list_rest → , ID param_list_rest | ε
     'return_stmt': [['RETURN', 'expr']],  # Instrucción de retorno
     'print_stmt': [['PRINT', 'LPAREN', 'expr', 'RPAREN']],  # Sentencia de impresión
     'import_stmt': [['IMPORT', 'id_list'], ['FROM', 'ID', 'IMPORT', 'id_list']],  # Instrucción de importación
+    'class_stmt': [['CLASS', 'ID', 'class_body']],
+    'class_body': [
+        ['COLON', 'stmt'],  # class_body → : stmt
+        ['LPAREN', 'ID', 'RPAREN', 'COLON', 'stmt']  # class_body → ( ID ) : stmt
+    ],
     'id_list': [['ID', 'id_list_rest']],
     'id_list_rest': [['COMMA', 'ID', 'id_list_rest'], ['AS', 'ID'], []],
     'assign_stmt': [['ID', 'EQUAL', 'expr']],
@@ -98,7 +104,7 @@ productions = {
               []],
     'term': [['factor', 'term_']],
     'term_': [['MUL', 'factor', 'term_'], ['DIV', 'factor', 'term_'], []],
-    'factor': [['LPAREN', 'expr', 'RPAREN'], ['ID', 'factor_tail'], ['LSQUARE', 'num_list', 'RSQUARE'], ['LBRACE', 'dict', 'RBRACE'],  ['NUM'], ['TRUE'], ['FALSE'], ['NOT', 'factor'],],  # factor → ( expr ) | ID | NUM | { dict } | [ num_list ] | True | False
+    'factor': [['LPAREN', 'expr', 'RPAREN'], ['ID', 'factor_tail'], ['LSQUARE', 'num_list', 'RSQUARE'], ['LBRACE', 'dict', 'RBRACE'],  ['NUM'], ['TRUE'], ['FALSE'], ['NOT', 'factor']],  # factor → ( expr ) | ID | NUM | { dict } | [ num_list ] | True | False
     'factor_tail': [
         ['LSQUARE', 'num_list', 'RSQUARE'],  # Acceso a posición de arreglo
         ['LPAREN', 'arg_list', 'RPAREN'],  # Llamada a función
@@ -248,7 +254,7 @@ class LL1Interpreter:
         return self.current_token() == 'EOF'  # Verificar si se consumió toda la entrada
 
 # Código de entrada
-code = "if x > 2: x=1 else: x=5"  # Ejemplo de código a analizar
+code = "a=(2,2,3)"  # Ejemplo de código a analizar
 tokens = lexer(code)  # Convertir el código en tokens
 
 first = compute_first()  # Calcular FIRST
