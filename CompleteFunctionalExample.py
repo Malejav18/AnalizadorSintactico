@@ -3,16 +3,31 @@ import re
 
 # Definición de los patrones de tokens para el lexer
 TOKEN_REGEX = [
+    ('TRUE', r'True'),
+    ('FALSE', r'False'),
+    ('IMPORT', r'import'),
+    ('AS', r'as'),
+    ('FROM', r'from'),  
     ("DEF", r"def"),
-    ('IF', r'if'),        # Palabras reservadas primero
+    ('IF', r'if'),
+    ('ELIF', r'elif'),
+    ('ELSE', r'else'),        
+    ('WHILE', r'while'),
+    ('FOR', r'for'),
+    ("IN", r"in"),
+    ('RANGE', r'range'),
     ('RETURN', r'return'),
-    ('EQEQ', r'=='),      # Operadores de comparación de dos caracteres
+    ('PRINT', r'print'),
+    ('EQEQ', r'=='),      
     ('NOTEQ', r'!='),     
     ('LE', r'<='),        
     ('GE', r'>='),        
-    ('LT', r'<'),         # Luego los de un solo caracter
+    ('LT', r'<'),        
     ('GT', r'>'),
     ('NUM', r'\d+'),
+    ('NOT', r'not'),
+    ('AND', r'and'),
+    ('OR', r'or'),
     ('ID', r"[a-zA-Z_][a-zA-Z_0-9]*"), # ID después de palabras reservadas
     ('PLUS', r'\+'),
     ('MINUS', r'-'),
@@ -20,39 +35,17 @@ TOKEN_REGEX = [
     ('DIV', r'/'),
     ('LPAREN', r'\('),
     ('RPAREN', r'\)'),
+    ('LSQUARE', r'\['),    # Llaves y corchetes
+    ('RSQUARE', r'\]'),
+    ('LBRACE', r'\{'),
+    ('RBRACE', r'\}'),
     ('EQUAL', r'='),
     ('COLON', r':'),
     ("COMMA", r","),
     ('SKIP', r'[ \t]+'),
+    
 ]
-"""
-# Definición de los patrones de tokens para el lexer
-TOKEN_REGEX = [
-    ("DEF", r"def"),
-    ('IF', r'if'),
-    ('ELIF', r'elif'),
-    ('ELSE', r'else'),
-    ("RETURN", r"return"),
-    ('EQEQ', r'=='),
-    ('NOTEQ', r'!='),
-    ('LE', r'<='),
-    ('GE', r'>='),
-    ('LT', r'<'),
-    ('GT', r'>'),
-    ("COMMA", r","),
-    ('NUM', r'\d+'),
-    ('ID', r"[a-zA-Z_][a-zA-Z_0-9]*"),
-    ('PLUS', r'\+'),
-    ('MINUS', r'-'),
-    ('MUL', r'\*'),
-    ('DIV', r'/'),
-    ('LPAREN', r'\('),
-    ('RPAREN', r'\)'),
-    ('EQUAL', r'='),
-    ('COLON', r':'),
-    ('SKIP', r'[ \t\n]+'),  # Asegurarse de que los saltos de línea y espacios sean ignorados
-]
-"""
+
 
 # Lexer: Convierte el código fuente en una lista de tokens
 def lexer(code):
@@ -75,48 +68,47 @@ def lexer(code):
     return tokens
 # Gramática de la producción
 productions = {
-    'stmt': [['assign_stmt'], ['def_stmt'], ['if_stmt'], ['return_stmt']],  # stmt → assign_stmt | def_stmt | if_stmt | return_stmt
+    'stmt': [['assign_stmt'], ['def_stmt'], ['if_stmt'], ['return_stmt'], ['while_stmt'], ['for_stmt'], ['print_stmt'], ['import_stmt']],  # stmt → assign_stmt | def_stmt | if_stmt | return_stmt
     'def_stmt': [['DEF', 'ID', 'LPAREN', 'param_list', 'RPAREN', 'COLON', 'stmt']],  # Definición de función
     "param_list": [["ID", "param_list_rest"],[]], # param_list → ID param_list_rest | ε
     "param_list_rest": [["COMMA", "ID", "param_list_rest"], []], # param_list_rest → , ID param_list_rest | ε
     'return_stmt': [['RETURN', 'expr']],  # Instrucción de retorno
+    'print_stmt': [['PRINT', 'LPAREN', 'expr', 'RPAREN']],  # Sentencia de impresión
+    'import_stmt': [['IMPORT', 'id_list'], ['FROM', 'ID', 'IMPORT', 'id_list']],  # Instrucción de importación
+    'id_list': [['ID', 'id_list_rest']],
+    'id_list_rest': [['COMMA', 'ID', 'id_list_rest'], ['AS', 'ID'], []],
     'assign_stmt': [['ID', 'EQUAL', 'expr']],
-    'if_stmt': [['IF', 'condition', 'COLON', 'stmt']],  # luego del IF ejecuta un stmt (otra asignación o un if anidado)
-    
-    'condition': [['expr', 'comp_op', 'expr']],
+    'if_stmt': [['IF', 'condition', 'COLON', 'stmt', 'if_tail']],  # luego del IF ejecuta un stmt (otra asignación o un if anidado)
+    'if_tail': [['ELIF', 'condition', 'COLON', 'stmt', 'if_tail'], ['ELSE', 'COLON', 'stmt']],  
+    'while_stmt': [['WHILE', 'condition', 'COLON', 'stmt']],  # Instrucción while
+    'for_stmt': [['FOR', 'ID', 'IN', 'loop_iterable', 'COLON', 'stmt']],  # Instrucción for
+    'loop_iterable': [['RANGE', 'LPAREN', 'num_list', 'RPAREN'], ['LSQUARE', 'num_list', 'RSQUARE'], ['ID']],  # Rango de números o ID
+    'num_list': [['NUM', 'num_list_rest'],  []],
+    'num_list_rest': [['COMMA', 'NUM', 'num_list_rest'],[]],
+    'dict': [['pair', 'dict_rest'], []],  # Un diccionario puede ser un par de clave:valor seguido de más pares
+    'dict_rest': [['COMMA', 'pair', 'dict_rest'], []],  # dict_rest → , pair dict_rest | ε
+    'pair': [['ID', 'COLON', 'expr']],  # par → ID: expr (clave: valor)
+    'condition': [['expr', 'comp_op', 'expr'], ['LPAREN', 'expr', 'comp_op', 'expr', 'RPAREN']],
     'comp_op': [['EQEQ'], ['NOTEQ'], ['LT'], ['GT'], ['LE'], ['GE']],
     'expr': [['term', 'expr_']],
-    'expr_': [['PLUS', 'term', 'expr_'], ['MINUS', 'term', 'expr_'], []],
+    'expr_': [['PLUS', 'term', 'expr_'], 
+              ['MINUS', 'term', 'expr_'],
+              ['AND', 'term', 'expr_'],  
+              ['OR', 'term', 'expr_'],   
+              []],
     'term': [['factor', 'term_']],
     'term_': [['MUL', 'factor', 'term_'], ['DIV', 'factor', 'term_'], []],
-    'factor': [['LPAREN', 'expr', 'RPAREN'], ['ID'], ['NUM']],
-}
-
-"""
-# Gramática de la producción
-productions = {
-    'stmt': [['assign_stmt'], ['if_stmt']],  # stmt → assign_stmt | if_stmt
-    'assign_stmt': [['ID', 'EQUAL', 'expr']],  # assign_stmt → ID = expr
-    'if_stmt': [['IF', 'condition', 'COLON', 'stmt', 'elif_else']],  # if_stmt → IF condition : stmt elif_else
-    'elif_else': [
-        ['ELIF', 'condition', 'COLON', 'stmt', 'elif_else'],  # elif_else → ELIF condition : stmt elif_else
-        ['ELSE', 'COLON', 'stmt'],  # elif_else → ELSE : stmt
-        []  # elif_else → ε
+    'factor': [['LPAREN', 'expr', 'RPAREN'], ['ID', 'factor_tail'], ['LSQUARE', 'num_list', 'RSQUARE'], ['LBRACE', 'dict', 'RBRACE'],  ['NUM'], ['TRUE'], ['FALSE'], ['NOT', 'factor'],],  # factor → ( expr ) | ID | NUM | { dict } | [ num_list ] | True | False
+    'factor_tail': [
+        ['LSQUARE', 'num_list', 'RSQUARE'],  # Acceso a posición de arreglo
+        ['LPAREN', 'arg_list', 'RPAREN'],  # Llamada a función
+        []  # ε (solo ID)
     ],
-    "function_def": ["DEF", "ID", "LPAREN", "param_list", "RPAREN", "COLON", "stmt"], # function_def → DEF ID ( param_list ) : stmt_list
-    "param_list": ["ID", "param_list_rest", "ε"], # param_list → ID param_list_rest | ε
-    "param_list_rest": ["COMMA", "ID", "param_list_rest", "ε"], # param_list_rest → , ID param_list_rest | ε
-    'condition': [['expr', 'comp_op', 'expr']],  # condition → expr comp_op expr
-    'comp_op': [['EQEQ'], ['NOTEQ'], ['LE'], ['GE'], ['LT'], ['GT']],  # comp_op → == | != | <= | >= | < | >
-    'expr': [['term', 'expr_']],  # expr → term expr_
-    'expr_': [['PLUS', 'term', 'expr_'], ['MINUS', 'term', 'expr_'], []],  # expr_ → + term expr_ | - term expr_ | ε
-    'term': [['factor', 'term_']],  # term → factor term_
-    'term_': [['MUL', 'factor', 'term_'], ['DIV', 'factor', 'term_'], []],  # term_ → * factor term_ | / factor term_ | ε
-    'factor': [['LPAREN', 'expr', 'RPAREN'], ['ID'], ['NUM']],  # factor → ( expr ) | ID | NUM
+    'arg_list': [['expr', 'arg_list_rest'], []],  # Lista de argumentos
+    'arg_list_rest': [['COMMA', 'expr', 'arg_list_rest'], []],  # Lista de argumentos separados por comas
 }
 
 
-"""
 
 
 # Conjunto de no terminales
@@ -256,7 +248,7 @@ class LL1Interpreter:
         return self.current_token() == 'EOF'  # Verificar si se consumió toda la entrada
 
 # Código de entrada
-code = "def an(a,b,c): return x*2"
+code = "if x > 2: x=1 else: x=5"  # Ejemplo de código a analizar
 tokens = lexer(code)  # Convertir el código en tokens
 
 first = compute_first()  # Calcular FIRST
