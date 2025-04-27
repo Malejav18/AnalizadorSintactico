@@ -22,7 +22,11 @@ TOKEN_REGEX = [
     ('EQEQ', r'=='),      
     ('NOTEQ', r'!='),     
     ('LE', r'<='),        
-    ('GE', r'>='),        
+    ('GE', r'>='),
+    ('PLUS_ASSIGN', r'\+='),
+    ('MINUS_ASSIGN', r'-='),
+    ('MUL_ASSIGN', r'\*='),  
+    ('DIV_ASSIGN', r'/='),
     ('LT', r'<'),        
     ('GT', r'>'),
     ('NUM', r'\d+'),
@@ -34,6 +38,7 @@ TOKEN_REGEX = [
     ('MINUS', r'-'),
     ('MUL', r'\*'),
     ('DIV', r'/'),
+    ('MOD', r'%'),
     ('LPAREN', r'\('),
     ('RPAREN', r'\)'),
     ('LSQUARE', r'\['),    # Llaves y corchetes
@@ -43,8 +48,7 @@ TOKEN_REGEX = [
     ('EQUAL', r'='),
     ('COLON', r':'),
     ("COMMA", r","),
-    ('SKIP', r'[ \t]+'),
-    
+    ('SKIP', r'[ \t]+'),    
 ]
 
 
@@ -83,7 +87,15 @@ productions = {
     ],
     'id_list': [['ID', 'id_list_rest']],
     'id_list_rest': [['COMMA', 'ID', 'id_list_rest'], ['AS', 'ID'], []],
-    'assign_stmt': [['ID', 'EQUAL', 'expr']],
+    'assign_stmt': [['ID', 'assign_op', 'expr'],[]],
+    'assign_op': [
+        ['EQUAL'],
+        ['PLUS_ASSIGN'],
+        ['MINUS_ASSIGN'],
+        ['MUL_ASSIGN'],
+        ['DIV_ASSIGN'],
+    ],  
+    'mod': [['MOD', 'term', 'expr_']],
     'if_stmt': [['IF', 'condition', 'COLON', 'stmt', 'if_tail']],  # luego del IF ejecuta un stmt (otra asignación o un if anidado)
     'if_tail': [['ELIF', 'condition', 'COLON', 'stmt', 'if_tail'], ['ELSE', 'COLON', 'stmt']],  
     'while_stmt': [['WHILE', 'condition', 'COLON', 'stmt']],  # Instrucción while
@@ -254,7 +266,7 @@ class LL1Interpreter:
         return self.current_token() == 'EOF'  # Verificar si se consumió toda la entrada
 
 # Código de entrada
-code = "a=(2,2,3)"  # Ejemplo de código a analizar
+code = "x/=2"  # Ejemplo de código a analizar
 tokens = lexer(code)  # Convertir el código en tokens
 
 first = compute_first()  # Calcular FIRST
