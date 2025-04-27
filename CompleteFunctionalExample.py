@@ -94,8 +94,11 @@ productions = {
         ['MINUS_ASSIGN'],
         ['MUL_ASSIGN'],
         ['DIV_ASSIGN'],
-    ],  
-    'mod': [['MOD', 'term', 'expr_']],
+        ['LT'],
+        ['GT'],
+        ['MOD']
+    ],
+    'mod_op':[['expr', 'MOD', 'expr']],
     'if_stmt': [['IF', 'condition', 'COLON', 'stmt', 'if_tail']],  # luego del IF ejecuta un stmt (otra asignación o un if anidado)
     'if_tail': [['ELIF', 'condition', 'COLON', 'stmt', 'if_tail'], ['ELSE', 'COLON', 'stmt']],  
     'while_stmt': [['WHILE', 'condition', 'COLON', 'stmt']],  # Instrucción while
@@ -125,8 +128,6 @@ productions = {
     'arg_list': [['expr', 'arg_list_rest'], []],  # Lista de argumentos
     'arg_list_rest': [['COMMA', 'expr', 'arg_list_rest'], []],  # Lista de argumentos separados por comas
 }
-
-
 
 
 # Conjunto de no terminales
@@ -266,7 +267,7 @@ class LL1Interpreter:
         return self.current_token() == 'EOF'  # Verificar si se consumió toda la entrada
 
 # Código de entrada
-code = "x/=2"  # Ejemplo de código a analizar
+code = "x=x%2"  # Ejemplo de código a analizar
 tokens = lexer(code)  # Convertir el código en tokens
 
 first = compute_first()  # Calcular FIRST
