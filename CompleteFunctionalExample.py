@@ -1,132 +1,65 @@
 from collections import defaultdict
-import re
+from analizador_lexico import *
+import sys
 
-# Definición de los patrones de tokens para el lexer
-TOKEN_REGEX = [
-    ('TRUE', r'True'),
-    ('FALSE', r'False'),
-    ('IMPORT', r'import'),
-    ('AS', r'as'),
-    ('FROM', r'from'),  
-    ("DEF", r"def"),
-    ('IF', r'if'),
-    ('ELIF', r'elif'),
-    ('ELSE', r'else'),        
-    ('WHILE', r'while'),
-    ('FOR', r'for'),
-    ("IN", r"in"),
-    ('RANGE', r'range'),
-    ('RETURN', r'return'),
-    ('PRINT', r'print'),
-    ('CLASS', r'class'),
-    ('EQEQ', r'=='),      
-    ('NOTEQ', r'!='),     
-    ('LE', r'<='),        
-    ('GE', r'>='),
-    ('PLUS_ASSIGN', r'\+='),
-    ('MINUS_ASSIGN', r'-='),
-    ('MUL_ASSIGN', r'\*='),  
-    ('DIV_ASSIGN', r'/='),
-    ('LT', r'<'),        
-    ('GT', r'>'),
-    ('NUM', r'\d+'),
-    ('NOT', r'not'),
-    ('AND', r'and'),
-    ('OR', r'or'),
-    ('ID', r"[a-zA-Z_][a-zA-Z_0-9]*"), # ID después de palabras reservadas
-    ('PLUS', r'\+'),
-    ('MINUS', r'-'),
-    ('MUL', r'\*'),
-    ('DIV', r'/'),
-    ('MOD', r'%'),
-    ('LPAREN', r'\('),
-    ('RPAREN', r'\)'),
-    ('LSQUARE', r'\['),    # Llaves y corchetes
-    ('RSQUARE', r'\]'),
-    ('LBRACE', r'\{'),
-    ('RBRACE', r'\}'),
-    ('EQUAL', r'='),
-    ('COLON', r':'),
-    ("COMMA", r","),
-    ('SKIP', r'[ \t]+'),    
-]
-
-
-# Lexer: Convierte el código fuente en una lista de tokens
-def lexer(code):
-    tokens = []
-    i = 0
-    while i < len(code):
-        match = None
-        for token_type, regex in TOKEN_REGEX:
-            pattern = re.compile(regex)
-            match = pattern.match(code, i)
-            if match:
-                value = match.group(0)
-                if token_type != 'SKIP':  # Ignorar espacios y tabulaciones
-                    tokens.append((token_type, value))
-                i = match.end()  # Avanzar el índice
-                break
-        if not match:
-            raise SyntaxError(f"Caracter inesperado: {code[i]}")
-    tokens.append(('EOF', '$'))  # Agregar marcador de fin de entrada
-    return tokens
 # Gramática de la producción
 productions = {
     'stmt': [['assign_stmt'], ['def_stmt'], ['if_stmt'], ['return_stmt'], ['while_stmt'], ['for_stmt'], ['print_stmt'], ['import_stmt'], ['class_stmt']],  # stmt → assign_stmt | def_stmt | if_stmt | return_stmt
-    'def_stmt': [['DEF', 'ID', 'LPAREN', 'param_list', 'RPAREN', 'COLON', 'stmt']],  # Definición de función
-    "param_list": [["ID", "param_list_rest"],[]], # param_list → ID param_list_rest | ε
-    "param_list_rest": [["COMMA", "ID", "param_list_rest"], []], # param_list_rest → , ID param_list_rest | ε
-    'return_stmt': [['RETURN', 'expr']],  # Instrucción de retorno
-    'print_stmt': [['PRINT', 'LPAREN', 'expr', 'RPAREN']],  # Sentencia de impresión
-    'import_stmt': [['IMPORT', 'id_list'], ['FROM', 'ID', 'IMPORT', 'id_list']],  # Instrucción de importación
-    'class_stmt': [['CLASS', 'ID', 'class_body']],
+    'def_stmt': [['def', 'id', 'tk_par_izq', 'param_list', 'tk_par_der', 'tk_dos_puntos', 'stmt']],  # Definición de función
+    "param_list": [["id", "param_list_rest"],[]], # param_list → ID param_list_rest | ε
+    "param_list_rest": [["tk_coma", "id", "param_list_rest"], []], # param_list_rest → , ID param_list_rest | ε
+    'return_stmt': [['return', 'expr']],  # Instrucción de retorno
+    'print_stmt': [['print', 'tk_par_izq', 'expr', 'tk_par_der']],  # Sentencia de impresión
+    'import_stmt': [['import', 'id_list'], ['from', 'id', 'import', 'id_list']],  # Instrucción de importación
+    'class_stmt': [['class', 'id', 'class_body']],
     'class_body': [
-        ['COLON', 'stmt'],  # class_body → : stmt
-        ['LPAREN', 'ID', 'RPAREN', 'COLON', 'stmt']  # class_body → ( ID ) : stmt
+        ['tk_dos_puntos', 'stmt'],  # class_body → : stmt
+        ['tk_par_izq', 'id', 'tk_par_der', 'tk_dos_puntos', 'stmt']  # class_body → ( ID ) : stmt
     ],
-    'id_list': [['ID', 'id_list_rest']],
-    'id_list_rest': [['COMMA', 'ID', 'id_list_rest'], ['AS', 'ID'], []],
-    'assign_stmt': [['ID', 'assign_op', 'expr'],[]],
+    'id_list': [['id', 'id_list_rest']],
+    'id_list_rest': [['tk_coma', 'id', 'id_list_rest'], ['as', 'id'], []],
+    'assign_stmt': [['id', 'assign_op', 'expr'],[]],
     'assign_op': [
-        ['EQUAL'],
-        ['PLUS_ASSIGN'],
-        ['MINUS_ASSIGN'],
-        ['MUL_ASSIGN'],
-        ['DIV_ASSIGN'],
-        ['LT'],
-        ['GT'],
-        ['MOD']
+        ['tk_asig'],
+        ['tk_mas_asig'],
+        ['tk_menos_asig'],
+        ['tk_mult_asig'],
+        ['tk_div_asig'],
+        ['tk_menor'],
+        ['tk_mayor'],
+        ['tk_mod_asig']
     ],
-    'mod_op':[['expr', 'MOD', 'expr']],
-    'if_stmt': [['IF', 'condition', 'COLON', 'stmt', 'if_tail']],  # luego del IF ejecuta un stmt (otra asignación o un if anidado)
-    'if_tail': [['ELIF', 'condition', 'COLON', 'stmt', 'if_tail'], ['ELSE', 'COLON', 'stmt']],  
-    'while_stmt': [['WHILE', 'condition', 'COLON', 'stmt']],  # Instrucción while
-    'for_stmt': [['FOR', 'ID', 'IN', 'loop_iterable', 'COLON', 'stmt']],  # Instrucción for
-    'loop_iterable': [['RANGE', 'LPAREN', 'num_list', 'RPAREN'], ['LSQUARE', 'num_list', 'RSQUARE'], ['ID']],  # Rango de números o ID
-    'num_list': [['NUM', 'num_list_rest'],  []],
-    'num_list_rest': [['COMMA', 'NUM', 'num_list_rest'],[]],
+    'mod_op':[['expr', 'tk_modulo', 'expr']],
+    'if_stmt': [['if', 'condition', 'tk_dos_puntos', 'stmt', 'if_tail']],  # luego del IF ejecuta un stmt (otra asignación o un if anidado)
+    'if_tail': [['elif', 'condition', 'tk_dos_puntos', 'stmt', 'if_tail'], ['else', 'tk_dos_puntos', 'stmt'],[]],  
+    'while_stmt': [['while', 'condition', 'tk_dos_puntos', 'stmt']],  # Instrucción while
+    'for_stmt': [['for', 'id', 'in', 'loop_iterable', 'tk_dos_puntos', 'stmt']],  # Instrucción for
+    'loop_iterable': [['range', 'tk_par_izq', 'num_list', 'tk_par_der'], ['tk_corchete_izq', 'num_list', 'tk_corchete_der'], ['id']],  # Rango de números o ID
+    'num_list': [['num', 'num_list_rest'],  []],
+    'num_list_rest': [['tk_coma', 'num', 'num_list_rest'],[]],
+    'num': [['tk_punto','tk_entero'],['tk_entero','tk_punto','tk_entero']],
     'dict': [['pair', 'dict_rest'], []],  # Un diccionario puede ser un par de clave:valor seguido de más pares
-    'dict_rest': [['COMMA', 'pair', 'dict_rest'], []],  # dict_rest → , pair dict_rest | ε
-    'pair': [['ID', 'COLON', 'expr']],  # par → ID: expr (clave: valor)
-    'condition': [['expr', 'comp_op', 'expr'], ['LPAREN', 'expr', 'comp_op', 'expr', 'RPAREN']],
-    'comp_op': [['EQEQ'], ['NOTEQ'], ['LT'], ['GT'], ['LE'], ['GE']],
+    'dict_rest': [['tk_coma', 'pair', 'dict_rest'], []],  # dict_rest → , pair dict_rest | ε
+    'pair': [['id', 'tk_dos_puntos', 'expr']],  # par → ID: expr (clave: valor)
+    'condition': [['expr', 'comp_op', 'expr'], ['tk_par_izq', 'expr', 'comp_op', 'expr', 'tk_par_der']],
+    'comp_op': [['tk_igual'], ['tk_distinto'], ['tk_menor'], ['tk_mayor'], ['tk_menor_igual'], ['tk_mayor_igual']],
     'expr': [['term', 'expr_']],
-    'expr_': [['PLUS', 'term', 'expr_'], 
-              ['MINUS', 'term', 'expr_'],
-              ['AND', 'term', 'expr_'],  
-              ['OR', 'term', 'expr_'],   
+    'expr_': [['tk_suma', 'term', 'expr_'], 
+              ['tk_resta', 'term', 'expr_'],
+              ['tk_modulo', 'term', 'expr_'], 
+              ['and', 'term', 'expr_'],  
+              ['or', 'term', 'expr_'],   
               []],
     'term': [['factor', 'term_']],
-    'term_': [['MUL', 'factor', 'term_'], ['DIV', 'factor', 'term_'], []],
-    'factor': [['LPAREN', 'expr', 'RPAREN'], ['ID', 'factor_tail'], ['LSQUARE', 'num_list', 'RSQUARE'], ['LBRACE', 'dict', 'RBRACE'],  ['NUM'], ['TRUE'], ['FALSE'], ['NOT', 'factor']],  # factor → ( expr ) | ID | NUM | { dict } | [ num_list ] | True | False
+    'term_': [['tk_mult', 'factor', 'term_'], ['tk_div', 'factor', 'term_'], []],
+    'factor': [['tk_par_izq', 'expr', 'tk_par_der'], ['id', 'factor_tail'], ['tk_corchete_izq', 'num_list', 'tk_corchete_der'], ['tk_llave_izq', 'dict', 'tk_llave_der'],  ['num'], ['True'], ['False'], ['not', 'factor']],  # factor → ( expr ) | ID | NUM | { dict } | [ num_list ] | True | False
     'factor_tail': [
-        ['LSQUARE', 'num_list', 'RSQUARE'],  # Acceso a posición de arreglo
-        ['LPAREN', 'arg_list', 'RPAREN'],  # Llamada a función
+        ['tk_corchete_izq', 'num_list', 'tk_corchete_der'],  # Acceso a posición de arreglo
+        ['tk_par_izq', 'arg_list', 'tk_par_der'],  # Llamada a función
         []  # ε (solo ID)
     ],
     'arg_list': [['expr', 'arg_list_rest'], []],  # Lista de argumentos
-    'arg_list_rest': [['COMMA', 'expr', 'arg_list_rest'], []],  # Lista de argumentos separados por comas
+    'arg_list_rest': [['tk_coma', 'expr', 'arg_list_rest'], []],  # Lista de argumentos separados por comas
 }
 
 
@@ -225,10 +158,12 @@ class LL1Interpreter:
         self.stack = ['stmt'] # Pila inicial con el símbolo inicial
 
     def current_token(self):
-        return self.tokens[self.pos][0]  # Obtener el tipo del token actual
+        print(self.pos)
+        x=tipo_tk(self.tokens[self.pos])
+        return x  # Obtener el tipo del token actual
 
     def debug(self, action):
-        print(f"[PILA: {self.stack} | TOKEN: {self.tokens[self.pos]}] -> {action}")
+        print(f"[PILA: {self.stack} | TOKEN: {tipo_tk(self.tokens[self.pos])}] -> {action}")
 
     def parse(self):
         while self.stack:
@@ -266,21 +201,74 @@ class LL1Interpreter:
 
         return self.current_token() == 'EOF'  # Verificar si se consumió toda la entrada
 
+#extraer posicion de un token
+def sacar_pos(token):
+    x,y=token.split(",")[-2:]
+    return ((int(x),int(y.rstrip(">"))))
+
+#extraer tipo de un token 
+def tipo_tk(token):
+    return token.split(',')[0][1:]
+
+#tokenizar \t y \n
+def token_tab_newl(tokens):
+    tabs=[1]
+    for i in range(1,len(tokens)):
+        pos=sacar_pos(tokens[i])
+        if pos[0]>sacar_pos(tokens[i-1])[0]:
+            tokens.append("NLINE")
+            if pos[1]>tabs[-1]:
+                tabs.append(pos[1])
+                tokens.append(f"<TAB,{tabs[-1]},{pos[0]}>")
+            elif pos[1]<tabs[-1]:
+                while tabs[-1]!=pos[1]:
+                    tabs.pop()
+                    tokens.append(f"<TABend,{tabs[-1]},{pos[0]}>")
+    return(tokens)
+
+
 # Código de entrada
-code = "x=x%2"  # Ejemplo de código a analizar
-tokens = lexer(code)  # Convertir el código en tokens
+
+if len(sys.argv) != 2:
+    print("Modo de Uso: python 'analizador_sintactico.py' codigo.py")
+else:
+    archivo_entrada = sys.argv[1]
+    salida = "resultado_lexico.txt"
+
+    try:
+        with open(archivo_entrada, 'r', encoding='utf-8') as file:  # Abre el archivo de código fuente
+            input_text = file.read() 
+
+        analizador_lexico(input_text, salida) 
+
+        #print(f"Análisis léxico completado. Resultados guardados en '{salida}'.")
+
+    except FileNotFoundError:
+        print(f"Error: El archivo '{archivo_entrada}' no se encontró.")
 
 first = compute_first()  # Calcular FIRST
-for token_type, _ in TOKEN_REGEX:
+for token_type in palabras_reservadas|tokens.keys()|tipos_datos.keys():
     if token_type != 'SKIP':
         first[token_type] = {token_type}
+first['id'] = {'id'}
+first['tk_entero'] = {'tk_entero'}
+first['tk_cadena'] = {'tk_cadena'}
+first['TAB'] = {'TAB'}
+first['TABend'] = {'TABend'}
+first['NEWLINE'] = {'NEWLINE'}
 first['EOF'] = {'EOF'}
 
 follow = compute_follow(first)  # Calcular FOLLOW
 table = build_predict_table(first, follow)  # Construir la tabla predictiva
 
 # Crear el intérprete y analizar
+file =open("./resultado_lexico.txt")
+content = file.read()
+tokens = token_tab_newl(content.splitlines())
+tokens.append('<EOF,>')
+
 parser = LL1Interpreter(tokens, table)
+
 print("\n🔍 Parsing...\n")
 accepted = parser.parse()
 
