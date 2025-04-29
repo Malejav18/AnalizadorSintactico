@@ -37,7 +37,8 @@ productions = {
     'loop_iterable': [['range', 'tk_par_izq', 'num_list', 'tk_par_der'], ['tk_corchete_izq', 'num_list', 'tk_corchete_der'], ['id']],  # Rango de números o ID
     'num_list': [['num', 'num_list_rest'],  []],
     'num_list_rest': [['tk_coma', 'num', 'num_list_rest'],[]],
-    'num': [['tk_punto','tk_entero'],['tk_entero','tk_punto','tk_entero']],
+    'num': [['tk_entero','num_'],['tk_punto','tk_entero']],
+    'num_':[['tk_punto','tk_entero'],[]],
     'dict': [['pair', 'dict_rest'], []],  # Un diccionario puede ser un par de clave:valor seguido de más pares
     'dict_rest': [['tk_coma', 'pair', 'dict_rest'], []],  # dict_rest → , pair dict_rest | ε
     'pair': [['id', 'tk_dos_puntos', 'expr']],  # par → ID: expr (clave: valor)
@@ -158,18 +159,16 @@ class LL1Interpreter:
         self.stack = ['stmt'] # Pila inicial con el símbolo inicial
 
     def current_token(self):
-        print(self.pos)
-        x=tipo_tk(self.tokens[self.pos])
-        return x  # Obtener el tipo del token actual
+        return (self.tokens[self.pos])  # Obtener el tipo del token actual
 
     def debug(self, action):
         print(f"[PILA: {self.stack} | TOKEN: {tipo_tk(self.tokens[self.pos])}] -> {action}")
 
     def parse(self):
         while self.stack:
+            print(self.pos)
             top = self.stack.pop()  # Obtener el símbolo en la cima de la pila
-            tok = self.current_token()
-
+            tok = tipo_tk(self.current_token())
             if top == 'ε':  # Ignorar ε
                 self.debug("Ignorar ε")
                 continue
@@ -178,7 +177,7 @@ class LL1Interpreter:
                     self.debug(f"Consumir '{tok}'")
                     self.pos += 1
                 else:
-                    self.debug(f"❌ Error: esperado {top}, encontrado {tok}")
+                    self.debug(f"❌ Error en {sacar_pos(self.current_token())}: esperado {top}, encontrado {tok}")
                     return False
             else:  # Si es un no terminal
                 rule = self.table.get(top, {}).get(tok)
@@ -198,8 +197,7 @@ class LL1Interpreter:
             if top == 'elif_else' and tok == 'ELIF':
                 self.debug("Procesar 'elif'")
                 self.stack.append('stmt')  # Agregar la producción que corresponde a la rama de elif
-
-        return self.current_token() == 'EOF'  # Verificar si se consumió toda la entrada
+        return tipo_tk(self.current_token()) == 'EOF'  # Verificar si se consumió toda la entrada
 
 #extraer posicion de un token
 def sacar_pos(token):
@@ -214,16 +212,19 @@ def tipo_tk(token):
 def token_tab_newl(tokens):
     tabs=[1]
     for i in range(1,len(tokens)):
+        print(tokens[i])
         pos=sacar_pos(tokens[i])
         if pos[0]>sacar_pos(tokens[i-1])[0]:
-            tokens.append("NLINE")
+            tokens.insert(i,f"<NEWLINE,{pos[0]},{pos[1]}>")
+            print(tokens)
             if pos[1]>tabs[-1]:
                 tabs.append(pos[1])
-                tokens.append(f"<TAB,{tabs[-1]},{pos[0]}>")
+                tokens.insert(i+1,f"<TAB,{pos[0]},{pos[1]}>")
             elif pos[1]<tabs[-1]:
                 while tabs[-1]!=pos[1]:
                     tabs.pop()
-                    tokens.append(f"<TABend,{tabs[-1]},{pos[0]}>")
+                    tokens.insert(i+1,f"<TABend,{pos[0]},{pos[1]}>")                
+    tokens.append(f'<EOF,{pos[0]},{pos[1]}>')
     return(tokens)
 
 
