@@ -227,17 +227,24 @@ def tipo_tk(token):
 #tokenizar \t y \n
 def token_tab_newl(tokens):
     tabs=[1]
-    for i in range(1,len(tokens)):
+    i=1
+    while i < len(tokens):
         pos=sacar_pos(tokens[i])
         if pos[0]>sacar_pos(tokens[i-1])[0]:
-            tokens.append("NLINE")
+            tokens.insert(i,f"<NEWLINE,{pos[0]},{pos[1]}>")
             if pos[1]>tabs[-1]:
                 tabs.append(pos[1])
-                tokens.append(f"<TAB,{tabs[-1]},{pos[0]}>")
+                tokens.insert(i+1,f"<TAB,{pos[0]},{pos[1]}>")
             elif pos[1]<tabs[-1]:
                 while tabs[-1]!=pos[1]:
                     tabs.pop()
-                    tokens.append(f"<TABend,{tabs[-1]},{pos[0]}>")
+                    tokens.insert(i,f"<TABend,{pos[0]},{pos[1]}>")
+        i+=1 
+    while tabs[-1]!=1:
+        tabs.pop()
+        tokens.append(f"<TABend,{pos[0]},{pos[1]}>")             
+    tokens.append(f'<EOF,{pos[0]},{pos[1]}>')
+    print(tokens)
     return(tokens)
 
 
@@ -279,7 +286,6 @@ table = build_predict_table(first, follow)  # Construir la tabla predictiva
 file =open("./resultado_lexico.txt")
 content = file.read()
 tokens = token_tab_newl(content.splitlines())
-tokens.append('<EOF,>')
 
 parser = LL1Interpreter(tokens, table)
 
