@@ -4,25 +4,10 @@ import sys
 
 # Gramática de la producción
 productions = {
-    'stmt': [['assign_stmt'], ['def_stmt'], ['if_stmt'], ['return_stmt'],
-         ['while_stmt'], ['for_stmt'], ['print_stmt'], ['import_stmt'],
-         ['class_stmt'], ['pass_stmt'], ['break_stmt'], ['continue_stmt'],
-         ['try_stmt']],
-    'pass_stmt': [['pass']],
-    'break_stmt': [['break']],
-    'continue_stmt': [['continue']],
-    'try_stmt': [['try', 'tk_dos_puntos', 'block', 'except_clause']],
-    'block': [['TAB', 'stmt_list', 'TABend']],
-    'except_clause': [['except', 'tk_dos_puntos', 'block']],
-    'stmt_list': [['stmt', 'NEWLINE', 'stmt_list'], []],
-    'def_stmt': [['def', 'id', 'tk_par_izq', 'param_list', 'tk_par_der', 'tk_dos_puntos', 'block']],
-    'if_stmt': [['if', 'condition', 'tk_dos_puntos', 'block', 'if_tail']],
-    'param_list': [["typed_param", "param_list_rest"], []],
-    "param_list_rest": [["tk_coma", "typed_param", "param_list_rest"], []],
-    "typed_param": [["id", "tk_dos_puntos", "type_expr"], ["id"]],
-    "type_expr": [["tk_corchete_izq", "type_list", "tk_corchete_der"], ["id"]],
-    "type_list": [["id", "type_list_cont"]],
-    "type_list_cont": [["tk_coma", "id", "type_list_cont"], []],
+    'stmt': [['assign_stmt'], ['def_stmt'], ['if_stmt'], ['return_stmt'], ['while_stmt'], ['for_stmt'], ['print_stmt'], ['import_stmt'], ['class_stmt']],  # stmt → assign_stmt | def_stmt | if_stmt | return_stmt
+    'def_stmt': [['def', 'id', 'tk_par_izq', 'param_list', 'tk_par_der', 'tk_dos_puntos', 'stmt']],  # Definición de función
+    "param_list": [["id", "param_list_rest"],[]], # param_list → ID param_list_rest | ε
+    "param_list_rest": [["tk_coma", "id", "param_list_rest"], []], # param_list_rest → , ID param_list_rest | ε
     'return_stmt': [['return', 'expr']],  # Instrucción de retorno
     'print_stmt': [['print', 'tk_par_izq', 'expr', 'tk_par_der']],  # Sentencia de impresión
     'import_stmt': [['import', 'id_list'], ['from', 'id', 'import', 'id_list']],  # Instrucción de importación
@@ -45,14 +30,14 @@ productions = {
         ['tk_mod_asig']
     ],
     'mod_op':[['expr', 'tk_modulo', 'expr']],
+    'if_stmt': [['if', 'condition', 'tk_dos_puntos', 'stmt', 'if_tail']],  # luego del IF ejecuta un stmt (otra asignación o un if anidado)
     'if_tail': [['elif', 'condition', 'tk_dos_puntos', 'stmt', 'if_tail'], ['else', 'tk_dos_puntos', 'stmt'],[]],  
     'while_stmt': [['while', 'condition', 'tk_dos_puntos', 'stmt']],  # Instrucción while
     'for_stmt': [['for', 'id', 'in', 'loop_iterable', 'tk_dos_puntos', 'stmt']],  # Instrucción for
-    'loop_iterable': [['range', 'tk_par_izq', 'num_list', 'tk_par_der'], ['tk_corchete_izq', 'num_list', 'tk_corchete_der'], ['id']],  # Rango de números o ID
+    'loop_iterable': [['range', 'tk_par_izq', 'num_list', 'tk_par_der'], ['tk_corchete_izq', 'num_list', 'tk_corchete_der'], ['id'], ['tk_par_izq', 'tuple_items', 'tk_par_der']],  # Rango de números o ID
     'num_list': [['num', 'num_list_rest'],  []],
     'num_list_rest': [['tk_coma', 'num', 'num_list_rest'],[]],
-    'num': [['tk_entero','num_'],['tk_punto','tk_entero']],
-    'num_':[['tk_punto','tk_entero'],[]],
+    'num': [['tk_punto','tk_entero'], ['tk_entero','tk_punto','tk_entero'], ['tk_entero','tk_punto'], ['tk_entero']],
     'dict': [['pair', 'dict_rest'], []],  # Un diccionario puede ser un par de clave:valor seguido de más pares
     'dict_rest': [['tk_coma', 'pair', 'dict_rest'], []],  # dict_rest → , pair dict_rest | ε
     'pair': [['id', 'tk_dos_puntos', 'expr']],  # par → ID: expr (clave: valor)
@@ -67,16 +52,21 @@ productions = {
               []],
     'term': [['factor', 'term_']],
     'term_': [['tk_mult', 'factor', 'term_'], ['tk_div', 'factor', 'term_'], []],
+    'tuple_items': [
+        ['expr', 'tuple_rest'],  # Mínimo 2 elementos para ser tupla
+        #['expr', 'tk_coma']  # Tupla de un solo elemento (expr,)
+    ],
+    'tuple_rest': [
+        ['tk_coma'],
+        ['tk_coma', 'expr', 'tuple_rest'],  # Más elementos en la tupla
+        []  # ε (fin de la tupla)
+    ],
     'factor': [['tk_par_izq', 'expr', 'tk_par_der'], 
-           ['id', 'factor_tail'], 
-           ['tk_corchete_izq', 'num_list', 'tk_corchete_der'], 
-           ['tk_llave_izq', 'dict', 'tk_llave_der'],  
-           ['num'], 
-           ['tk_cadena'],
-           ['True'], 
-           ['False'], 
-           ['not', 'factor']],
-
+               ['id', 'factor_tail'], 
+               ['tk_corchete_izq', 'num_list', 'tk_corchete_der'], 
+               ['tk_llave_izq', 'dict', 'tk_llave_der'],  
+               ['num'], ['True'], ['False'], ['not', 'factor'], 
+               ['tk_par_izq', 'tuple_items', 'tk_par_der']],  # factor → ( expr ) | ID | NUM | { dict } | [ num_list ] | True | False
     'factor_tail': [
         ['tk_corchete_izq', 'num_list', 'tk_corchete_der'],  # Acceso a posición de arreglo
         ['tk_par_izq', 'arg_list', 'tk_par_der'],  # Llamada a función
@@ -182,61 +172,48 @@ class LL1Interpreter:
         self.stack = ['stmt'] # Pila inicial con el símbolo inicial
 
     def current_token(self):
-        return (self.tokens[self.pos])  # Obtener el tipo del token actual
+        print(self.pos)
+        x=tipo_tk(self.tokens[self.pos])
+        return x  # Obtener el tipo del token actual
 
     def debug(self, action):
         print(f"[PILA: {self.stack} | TOKEN: {tipo_tk(self.tokens[self.pos])}] -> {action}")
 
     def parse(self):
-        self.stack.append('EOF')  # Agregar EOF al fondo
-        self.stack.append('stmt')  # Símbolo inicial válido según tu gramática
-
         while self.stack:
-            top = self.stack.pop()
-            token = self.current_token()
-            tok_type = tipo_tk(token)
-            lexema = token.split(',')[1].strip()
-            fila, col = sacar_pos(token)
+            top = self.stack.pop()  # Obtener el símbolo en la cima de la pila
+            tok = self.current_token()
 
-            self.debug(f"Top: {top}, Token: {tok_type}, Stack: {self.stack}")
-
-            if top not in self.table:
-                # Si top es un terminal y no coincide con el token actual, error
-                if tok_type != top:
-                    print(f'<{fila},{col}> Error sintactico: se encontro: “{lexema}”; se esperaba: “{top}”.')
-                    return False
+            if top == 'ε':  # Ignorar ε
+                self.debug("Ignorar ε")
+                continue
+            elif top not in non_terminals:  # Si es un terminal
+                if top == tok:
+                    self.debug(f"Consumir '{tok}'")
+                    self.pos += 1
                 else:
-                    continue  # Coincide terminal con token, se consume correctamente
-            elif tok_type not in self.table[top]:
-                esperados = [f'"{e}"' for e in self.table[top].keys()]
-                print(f'<{fila},{col}> Error sintactico: se encontro: “{lexema}”; se esperaba: {", ".join(esperados)}.')
-                return False
-
-
-            elif top in self.table:  # No terminal
-                if tok_type not in self.table[top]:
-                    esperados = [f'"{e}"' for e in self.table[top].keys()]
-                    print(f'<{fila},{col}> Error sintactico: se encontro: “{lexema}”; se esperaba: {", ".join(esperados)}.')
+                    self.debug(f"❌ Error: esperado {top}, encontrado {tok}")
                     return False
-                rule = self.table[top][tok_type]
-                self.debug(f"Aplicar regla: {top} -> {rule}")
-                for sym in reversed(rule):
-                    if sym != 'ε':
-                        self.stack.append(sym)
+            else:  # Si es un no terminal
+                rule = self.table.get(top, {}).get(tok)
+                if rule is None:
+                    self.debug(f"❌ Error: sin regla para ({top}, {tok})")
+                    return False
+                self.debug(f"Aplicar: {top} → {' '.join(rule) if rule else 'ε'}")
+                # Si la regla es vacía (ε), no hacemos nada
+                if rule == []:
+                    self.debug(f"Ignorar ε en {top}")
+                    continue  # No agregar nada a la pila
+                for sym in reversed(rule):  # Agregar la producción a la pila
+                    self.stack.append(sym)
 
-            else:
-                # Error: símbolo inesperado en la pila
-                print(f'<{fila},{col}> Error sintactico: se encontro: “{lexema}”; se esperaba: “{top}”.')
-                return False
+            # Especial para elif_else: Si estamos en el paso final de elif_else y encontramos un "elif",
+            # deberíamos procesarlo, no aplicar ε
+            if top == 'elif_else' and tok == 'ELIF':
+                self.debug("Procesar 'elif'")
+                self.stack.append('stmt')  # Agregar la producción que corresponde a la rama de elif
 
-        if tipo_tk(self.current_token()) == 'EOF':
-            print("El analisis sintactico ha finalizado exitosamente.")
-            return True
-        else:
-            fila, col = sacar_pos(self.current_token())
-            lexema = self.current_token().split(',')[1].strip()
-            print(f'<{fila},{col}> Error sintactico: se encontro: “{lexema}”; se esperaba: “EOF”.')
-            return False
+        return self.current_token() == 'EOF'  # Verificar si se consumió toda la entrada
 
 #extraer posicion de un token
 def sacar_pos(token):
@@ -251,28 +228,42 @@ def tipo_tk(token):
 def token_tab_newl(tokens):
     tabs=[1]
     for i in range(1,len(tokens)):
-        print(tokens[i])
         pos=sacar_pos(tokens[i])
         if pos[0]>sacar_pos(tokens[i-1])[0]:
-            tokens.insert(i,f"<NEWLINE,{pos[0]},{pos[1]}>")
-            print(tokens)
+            tokens.append("NLINE")
             if pos[1]>tabs[-1]:
                 tabs.append(pos[1])
-                tokens.insert(i+1,f"<TAB,{pos[0]},{pos[1]}>")
+                tokens.append(f"<TAB,{tabs[-1]},{pos[0]}>")
             elif pos[1]<tabs[-1]:
                 while tabs[-1]!=pos[1]:
                     tabs.pop()
-                    tokens.insert(i+1,f"<TABend,{pos[0]},{pos[1]}>")                
-    tokens.append(f'<EOF,{pos[0]},{pos[1]}>')
+                    tokens.append(f"<TABend,{tabs[-1]},{pos[0]}>")
     return(tokens)
-# Calcular conjuntos FIRST y FOLLOW
-first = compute_first()
 
-# Agregar entradas a FIRST manualmente para terminales (si es necesario)
-for token_type in palabras_reservadas | tokens.keys() | tipos_datos.keys():
-    first[token_type] = {token_type}
 
-# Tokens especiales
+# Código de entrada
+
+if len(sys.argv) != 2:
+    print("Modo de Uso: python 'analizador_sintactico.py' codigo.py")
+else:
+    archivo_entrada = sys.argv[1]
+    salida = "resultado_lexico.txt"
+
+    try:
+        with open(archivo_entrada, 'r', encoding='utf-8') as file:  # Abre el archivo de código fuente
+            input_text = file.read() 
+
+        analizador_lexico(input_text, salida) 
+
+        #print(f"Análisis léxico completado. Resultados guardados en '{salida}'.")
+
+    except FileNotFoundError:
+        print(f"Error: El archivo '{archivo_entrada}' no se encontró.")
+
+first = compute_first()  # Calcular FIRST
+for token_type in palabras_reservadas|tokens.keys()|tipos_datos.keys():
+    if token_type != 'SKIP':
+        first[token_type] = {token_type}
 first['id'] = {'id'}
 first['tk_entero'] = {'tk_entero'}
 first['tk_cadena'] = {'tk_cadena'}
@@ -281,60 +272,21 @@ first['TABend'] = {'TABend'}
 first['NEWLINE'] = {'NEWLINE'}
 first['EOF'] = {'EOF'}
 
-follow = compute_follow(first)
-table = build_predict_table(first, follow)  # ✅ ESTA es la definición de "table"
+follow = compute_follow(first)  # Calcular FOLLOW
+table = build_predict_table(first, follow)  # Construir la tabla predictiva
 
+# Crear el intérprete y analizar
+file =open("./resultado_lexico.txt")
+content = file.read()
+tokens = token_tab_newl(content.splitlines())
+tokens.append('<EOF,>')
 
-if __name__ == "__main__":
-    import os
-    import sys
+parser = LL1Interpreter(tokens, table)
 
-    if len(sys.argv) != 2:
-        print("Modo de Uso: python analizador_sintactico.py archivo.py")
-        sys.exit(1)
+print("\n🔍 Parsing...\n")
+accepted = parser.parse()
 
-    archivo_entrada = sys.argv[1]
-    salida = r"C:\Users\heduu\OneDrive\Escritorio\Universidad\Quinto Semestre\Lenguajes de programación y transducción\AnalizadorSintactico-main\AnalizadorSintactico-main\resultado_lexico.txt"
-
-    if not os.path.exists(archivo_entrada):
-        print(f"Error: El archivo '{archivo_entrada}' no se encontró.")
-        sys.exit(1)
-
-    # Ejecutar análisis léxico
-    try:
-        with open(archivo_entrada, 'r', encoding='utf-8') as f:
-            input_text = f.read()
-
-        analizador_lexico(input_text, salida)
-
-        if not os.path.exists(salida):
-            print("❌ Error: El análisis léxico no generó el archivo de salida.")
-            sys.exit(1)
-
-    except Exception as e:
-        print(f"❌ Error durante el análisis léxico: {e}")
-        sys.exit(1)
-
-    print("✅ Análisis léxico completado. Iniciando análisis sintáctico...")
-
-    # Ejecutar análisis sintáctico
-    try:
-        with open(salida, 'r', encoding='utf-8') as file:
-            content = file.read()
-
-        tokens = token_tab_newl(content.splitlines())
-        tokens.append('<EOF,>')
-
-        parser = LL1Interpreter(tokens, table)
-
-        print("\n🔍 Parsing...\n")
-        accepted = parser.parse()
-
-        if accepted:
-            print("\n✔ Cadena aceptada")
-        else:
-            print("\n❌ Cadena rechazada")
-
-    except Exception as e:
-        print(f"❌ Error durante el análisis sintáctico: {e}")
-        sys.exit(1)
+if accepted:
+    print("\n✔ Cadena aceptada")
+else:
+    print("\n❌ Cadena rechazada")
