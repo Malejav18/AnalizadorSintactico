@@ -4,8 +4,13 @@ import sys
 
 # Gramática de la producción
 productions = {
-    'stmt': [['assign_stmt'], ['def_stmt'], ['if_stmt'], ['return_stmt'], ['while_stmt'], ['for_stmt'], ['print_stmt'], ['import_stmt'], ['class_stmt']],  # stmt → assign_stmt | def_stmt | if_stmt | return_stmt
-    'def_stmt': [['def', 'id', 'tk_par_izq', 'param_list', 'tk_par_der', 'tk_dos_puntos', 'stmt']],  # Definición de función
+    'stmts':[['stmt','stmts_','EOF']],
+    'stmts_':[['stmt','stmts_'],[]],
+    'stmt': [['simple_stmts'],['complx']],
+    'simple_stmts':[['simple_stmt','NEWLINE']],
+    'simple_stmt':[['id','assign_stmt'], ['return_stmt'], ['print_stmt'], ['import_stmt']],
+    'complx': [['def_stmt'], ['if_stmt'], ['while_stmt'], ['for_stmt'], ['class_stmt']],  # stmt → assign_stmt | def_stmt | if_stmt | return_stmt
+    'def_stmt': [['def', 'id', 'tk_par_izq', 'param_list', 'tk_par_der', 'tk_dos_puntos','block']],  # Definición de función
     "param_list": [["id", "param_list_rest"],[]], # param_list → ID param_list_rest | ε
     "param_list_rest": [["tk_coma", "id", "param_list_rest"], []], # param_list_rest → , ID param_list_rest | ε
     'return_stmt': [['return', 'expr']],  # Instrucción de retorno
@@ -13,12 +18,13 @@ productions = {
     'import_stmt': [['import', 'id_list'], ['from', 'id', 'import', 'id_list']],  # Instrucción de importación
     'class_stmt': [['class', 'id', 'class_body']],
     'class_body': [
-        ['tk_dos_puntos', 'stmt'],  # class_body → : stmt
-        ['tk_par_izq', 'id', 'tk_par_der', 'tk_dos_puntos', 'stmt']  # class_body → ( ID ) : stmt
+        ['tk_dos_puntos', 'block'],  # class_body → : stmt
+        ['tk_par_izq', 'id', 'tk_par_der', 'tk_dos_puntos', 'block']  # class_body → ( ID ) : stmt
     ],
+    'block':[['NEWLINE','TAB', 'stmts_','TABend'],['simple_stmts']],
     'id_list': [['id', 'id_list_rest']],
     'id_list_rest': [['tk_coma', 'id', 'id_list_rest'], ['as', 'id'], []],
-    'assign_stmt': [['id', 'assign_op', 'expr'],[]],
+    'assign_stmt': [['assign_op', 'expr'],['factor_tail']],
     'assign_op': [
         ['tk_asig'],
         ['tk_mas_asig'],
@@ -30,18 +36,20 @@ productions = {
         ['tk_mod_asig']
     ],
     'mod_op':[['expr', 'tk_modulo', 'expr']],
-    'if_stmt': [['if', 'condition', 'tk_dos_puntos', 'stmt', 'if_tail']],  # luego del IF ejecuta un stmt (otra asignación o un if anidado)
-    'if_tail': [['elif', 'condition', 'tk_dos_puntos', 'stmt', 'if_tail'], ['else', 'tk_dos_puntos', 'stmt'],[]],  
-    'while_stmt': [['while', 'condition', 'tk_dos_puntos', 'stmt']],  # Instrucción while
-    'for_stmt': [['for', 'id', 'in', 'loop_iterable', 'tk_dos_puntos', 'stmt']],  # Instrucción for
-    'loop_iterable': [['range', 'tk_par_izq', 'num_list', 'tk_par_der'], ['tk_corchete_izq', 'num_list', 'tk_corchete_der'], ['id'], ['tk_par_izq', 'tuple_items', 'tk_par_der']],  # Rango de números o ID
-    'num_list': [['num', 'num_list_rest'],  []],
+    'if_stmt': [['if', 'condition', 'tk_dos_puntos','block', 'if_tail']],  # luego del IF ejecuta un stmt (otra asignación o un if anidado)
+    'if_tail': [['elif', 'condition', 'tk_dos_puntos','block', 'if_tail'], ['else', 'tk_dos_puntos', 'block'],[]],  
+    'while_stmt': [['while', 'condition', 'tk_dos_puntos','block']],  # Instrucción while
+    'for_stmt': [['for', 'id', 'in', 'loop_iterable', 'tk_dos_puntos', 'block']],  # Instrucción for
+    'loop_iterable': [['range', 'tk_par_izq', 'num_list', 'tk_par_der'], ['tk_corchete_izq', 'items', 'tk_corchete_der'], ['id'], ['tk_par_izq', 'items', 'tk_par_der']],  # Rango de números o ID
+    'num_list': [['num', 'num_list_rest'],['id'],  []],
     'num_list_rest': [['tk_coma', 'num', 'num_list_rest'],[]],
-    'num': [['tk_punto','tk_entero'], ['tk_entero','tk_punto','tk_entero'], ['tk_entero','tk_punto'], ['tk_entero']],
+    'num': [['tk_entero','num.'],['tk_punto','tk_entero']],
+    'num.':[['tk_punto','num.num'],[]],
+    'num.num':[['tk_entero'],[]],
     'dict': [['pair', 'dict_rest'], []],  # Un diccionario puede ser un par de clave:valor seguido de más pares
     'dict_rest': [['tk_coma', 'pair', 'dict_rest'], []],  # dict_rest → , pair dict_rest | ε
     'pair': [['id', 'tk_dos_puntos', 'expr']],  # par → ID: expr (clave: valor)
-    'condition': [['expr', 'comp_op', 'expr'], ['tk_par_izq', 'expr', 'comp_op', 'expr', 'tk_par_der']],
+    'condition': [['expr', 'comp_op', 'expr'], ['tk_par_izq','condition' 'tk_par_der']],
     'comp_op': [['tk_igual'], ['tk_distinto'], ['tk_menor'], ['tk_mayor'], ['tk_menor_igual'], ['tk_mayor_igual']],
     'expr': [['term', 'expr_']],
     'expr_': [['tk_suma', 'term', 'expr_'], 
@@ -52,24 +60,25 @@ productions = {
               []],
     'term': [['factor', 'term_']],
     'term_': [['tk_mult', 'factor', 'term_'], ['tk_div', 'factor', 'term_'], []],
-    'tuple_items': [
-        ['expr', 'tuple_rest'],  # Mínimo 2 elementos para ser tupla
+    'items': [
+        ['expr', 'items_rest'],  # Mínimo 2 elementos para ser tupla
         #['expr', 'tk_coma']  # Tupla de un solo elemento (expr,)
     ],
-    'tuple_rest': [
+    'items_rest': [
         ['tk_coma'],
-        ['tk_coma', 'expr', 'tuple_rest'],  # Más elementos en la tupla
+        ['tk_coma', 'expr', 'items_rest'],  # Más elementos en la tupla
         []  # ε (fin de la tupla)
     ],
     'factor': [['tk_par_izq', 'expr', 'tk_par_der'], 
                ['id', 'factor_tail'], 
-               ['tk_corchete_izq', 'num_list', 'tk_corchete_der'], 
+               ['tk_corchete_izq', 'items', 'tk_corchete_der'], 
                ['tk_llave_izq', 'dict', 'tk_llave_der'],  
                ['num'], ['True'], ['False'], ['not', 'factor'], 
-               ['tk_par_izq', 'tuple_items', 'tk_par_der']],  # factor → ( expr ) | ID | NUM | { dict } | [ num_list ] | True | False
+               ['tk_par_izq', 'items', 'tk_par_der']],  # factor → ( expr ) | ID | NUM | { dict } | [ num_list ] | True | False
     'factor_tail': [
-        ['tk_corchete_izq', 'num_list', 'tk_corchete_der'],  # Acceso a posición de arreglo
+        ['tk_corchete_izq', 'items', 'tk_corchete_der'],  # Acceso a posición de arreglo
         ['tk_par_izq', 'arg_list', 'tk_par_der'],  # Llamada a función
+        ['tk_punto','id','factor_tail'], # llamada a atributo
         []  # ε (solo ID)
     ],
     'arg_list': [['expr', 'arg_list_rest'], []],  # Lista de argumentos
@@ -112,7 +121,7 @@ def compute_first():
 # Cálculo del conjunto FOLLOW
 def compute_follow(first):
     follow = defaultdict(set)
-    follow['stmt'].add('EOF')  # Agregar EOF al FOLLOW del símbolo inicial
+    follow['stmts'].add('EOF')  # Agregar EOF al FOLLOW del símbolo inicial
 
     changed = True
     while changed:
@@ -169,12 +178,10 @@ class LL1Interpreter:
         self.tokens = tokens  # Lista de tokens
         self.table = table    # Tabla predictiva
         self.pos = 0          # Posición actual en los tokens
-        self.stack = ['stmt'] # Pila inicial con el símbolo inicial
+        self.stack = ['stmts'] # Pila inicial con el símbolo inicial
 
     def current_token(self):
-        print(self.pos)
-        x=tipo_tk(self.tokens[self.pos])
-        return x  # Obtener el tipo del token actual
+        return (self.tokens[self.pos])  # Obtener el tipo del token actual
 
     def debug(self, action):
         print(f"[PILA: {self.stack} | TOKEN: {tipo_tk(self.tokens[self.pos])}] -> {action}")
@@ -182,8 +189,7 @@ class LL1Interpreter:
     def parse(self):
         while self.stack:
             top = self.stack.pop()  # Obtener el símbolo en la cima de la pila
-            tok = self.current_token()
-
+            tok = tipo_tk(self.current_token())
             if top == 'ε':  # Ignorar ε
                 self.debug("Ignorar ε")
                 continue
@@ -192,12 +198,12 @@ class LL1Interpreter:
                     self.debug(f"Consumir '{tok}'")
                     self.pos += 1
                 else:
-                    self.debug(f"❌ Error: esperado {top}, encontrado {tok}")
+                    self.debug(f"❌ Error en {sacar_pos(self.current_token())}: esperado {top}, encontrado {tok}")
                     return False
             else:  # Si es un no terminal
                 rule = self.table.get(top, {}).get(tok)
                 if rule is None:
-                    self.debug(f"❌ Error: sin regla para ({top}, {tok})")
+                    self.debug(f"❌ Error en {sacar_pos(self.current_token())}: sin regla para ({top}, {tok})")
                     return False
                 self.debug(f"Aplicar: {top} → {' '.join(rule) if rule else 'ε'}")
                 # Si la regla es vacía (ε), no hacemos nada
@@ -213,7 +219,7 @@ class LL1Interpreter:
                 self.debug("Procesar 'elif'")
                 self.stack.append('stmt')  # Agregar la producción que corresponde a la rama de elif
 
-        return self.current_token() == 'EOF'  # Verificar si se consumió toda la entrada
+        return self.stack==[]  # Verificar si se consumió toda la entrada
 
 #extraer posicion de un token
 def sacar_pos(token):
@@ -238,11 +244,12 @@ def token_tab_newl(tokens):
             elif pos[1]<tabs[-1]:
                 while tabs[-1]!=pos[1]:
                     tabs.pop()
-                    tokens.insert(i,f"<TABend,{pos[0]},{pos[1]}>")
+                    tokens.insert(i+1,f"<TABend,{pos[0]},{pos[1]}>")
         i+=1 
+    tokens.append(f'<NEWLINE,{pos[0]},{pos[1]}>')
     while tabs[-1]!=1:
         tabs.pop()
-        tokens.append(f"<TABend,{pos[0]},{pos[1]}>")             
+        tokens.append(f"<TABend,{pos[0]},{pos[1]}>")
     tokens.append(f'<EOF,{pos[0]},{pos[1]}>')
     print(tokens)
     return(tokens)
