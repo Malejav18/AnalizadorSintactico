@@ -10,9 +10,19 @@ productions = {
     'simple_stmts':[['simple_stmt','NEWLINE']],
     'simple_stmt':[['id','assign_stmt'], ['return_stmt'], ['print_stmt'], ['import_stmt']],
     'complx': [['def_stmt'], ['if_stmt'], ['while_stmt'], ['for_stmt'], ['class_stmt']],  # stmt → assign_stmt | def_stmt | if_stmt | return_stmt
-    'def_stmt': [['def', 'id', 'tk_par_izq', 'param_list', 'tk_par_der', 'tk_dos_puntos','block']],  # Definición de función
-    "param_list": [["id", "param_list_rest"],[]], # param_list → ID param_list_rest | ε
-    "param_list_rest": [["tk_coma", "id", "param_list_rest"], []], # param_list_rest → , ID param_list_rest | ε
+    
+    'def_stmt': [['def', 'id', 'tk_par_izq', 'param_list', 'tk_par_der', 'tk_dos_puntos','block']],
+    "param_list": [["id", "param_structure", "param_list_rest"],[]],  # param_list → id param_list_rest | ε
+    "param_list_rest": [["tk_coma", "param_list"], []],  # param_list_rest → , id param_list_rest | ε
+    "param_structure": [["tk_dos_puntos", "param_list_complex"],[]],  # param_structure → id : tipos_datos | id : tipo_lista
+    "param_list_complex": [['tipo_lista', "tk_corchete_izq",'lista_tipos_datos', "tk_corchete_der"], ["tk_corchete_izq", 'tipos_datos', "tk_corchete_der"], ["tipos_datos"], []],  # param_list_complex → id param_list_rest | ε
+    "param_list_rest_2": [["tk_coma", "id", "param_list_rest_2"], []],  # param_list_rest_2 → , id param_list_rest_2 | ε
+    
+    "lista_tipos_datos" : [["tipos_datos", "lista_tipos_datos_rest"], []],  # lista_tipos_datos → tipos_datos lista_tipos_datos_rest | ε
+    "lista_tipos_datos_rest" : [["tk_coma", "tipos_datos", "lista_tipos_datos_rest"], []],  # lista_tipos_datos_rest → , tipos_datos lista_tipos_datos_rest | ε
+    'tipos_datos': [['int'], ['float'], ['str'], ['bool']],  # tipos_datos → int | float | str | bool
+    'tipo_lista': [['list'], ['set'], ['dict'], ['tuple']],  # tipo_lista → list | set | dict | tuple]
+    
     'return_stmt': [['return', 'expr']],  # Instrucción de retorno
     'print_stmt': [['print', 'tk_par_izq', 'print_expr', 'tk_par_der']],  # Sentencia de impresión
     'print_expr': [['expr', 'print_tail'], []],
