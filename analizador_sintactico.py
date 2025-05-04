@@ -17,7 +17,7 @@ productions = {
     'print_stmt': [['print', 'tk_par_izq', 'print_expr', 'tk_par_der']],  # Sentencia de impresión
     'print_expr': [['expr', 'print_tail'], []],
     'print_tail': [['tk_coma', 'expr', 'print_tail'], []],
-    'import_stmt': [['import', 'id_list'], ['from', 'id', 'import', 'id_list']],  # Instrucción de importación
+    'import_stmt': [['import', 'id_list'], ['import', 'id_list'], ['from', 'id', 'import', 'id_list']],  # Instrucción de importación
     'class_stmt': [['class', 'id', 'class_body']],
     'class_body': [
         ['tk_dos_puntos', 'block'],  # class_body → : stmt
@@ -64,7 +64,7 @@ productions = {
               []],
     'term': [['factor', 'term_']],
     'term_': [['tk_mult', 'factor', 'term_'], ['tk_div', 'factor', 'term_'], []],
-    'items': [
+    'items_tuple': [
         ['expr', 'items_rest'] # Mínimo 1 para ser tupla
         ],
     'items_rest': [
@@ -75,15 +75,33 @@ productions = {
         ['expr', 'items_rest'],
         []
     ],
+    'items_array': [
+        ['tk_dos_puntos', 'items_dos_puntos'],
+        ['expr', 'items_array_rest'] # arreglos
+        ],
+    'items_dos_puntos': [
+        ['id'],           # text[:j]
+        [],
+    ],
+    'items_array_rest': [
+        ['tk_coma', 'items_rest_tail'],
+        ['tk_dos_puntos', 'items_array_tail'],   # text[i:j]
+        []
+    ],
+    'items_array_tail': [
+        ['expr', 'items_array_rest'],
+        ['id'],
+        []
+    ],
     'factor': [['tk_par_izq', 'expr', 'tk_par_der'], 
                ['id', 'factor_tail'], 
-               ['tk_corchete_izq', 'items', 'tk_corchete_der'], 
+               ['tk_corchete_izq', 'items_array', 'tk_corchete_der'], 
                ['tk_llave_izq', 'dict', 'tk_llave_der'],  
                ['num'], ['True'], ['False'], ['not', 'factor'], 
-               ['tk_par_izq', 'items', 'tk_par_der'],
+               ['tk_par_izq', 'items_tuple', 'tk_par_der'],
                ['tk_cadena']],  # factor → ( expr ) | ID | NUM | { dict } | [ num_list ] | True | False
     'factor_tail': [
-        ['tk_corchete_izq', 'items', 'tk_corchete_der'],  # Acceso a posición de arreglo
+        ['tk_corchete_izq', 'items_array', 'tk_corchete_der'],  # Acceso a posición de arreglo
         ['tk_par_izq', 'arg_list', 'tk_par_der'],  # Llamada a función
         ['tk_punto','id','factor_tail'], # llamada a atributo
         []  # ε (solo ID)
