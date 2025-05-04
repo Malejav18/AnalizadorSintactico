@@ -47,7 +47,7 @@ productions = {
     'if_stmt': [['if', 'condition', 'tk_dos_puntos','block', 'if_tail']],  # luego del IF ejecuta un stmt (otra asignación o un if anidado)
     'if_tail': [['elif', 'condition', 'tk_dos_puntos','block', 'if_tail'], ['else', 'tk_dos_puntos', 'block'],[]],
     'while_stmt': [['while', 'condition', 'tk_dos_puntos', 'loop_block', 'while_tail']],  # Instrucción while
-    'while_tail': [['else', 'tk_dos_puntos', 'block'],[]],
+    'while_tail': [['else', 'tk_dos_puntos', 'loop_block'],[]],
     'for_stmt': [['for', 'id', 'in', 'loop_iterable', 'tk_dos_puntos', 'loop_block']],  # Instrucción for
     'loop_iterable': [['range', 'tk_par_izq', 'num_list', 'tk_par_der'], ['tk_corchete_izq', 'items', 'tk_corchete_der'], ['id'], ['tk_par_izq', 'items', 'tk_par_der']],  # Rango de números o ID
     'num_list': [['num', 'num_list_rest'],['id'],  []],
