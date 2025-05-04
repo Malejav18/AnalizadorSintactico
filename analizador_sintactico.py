@@ -14,7 +14,9 @@ productions = {
     "param_list": [["id", "param_list_rest"],[]], # param_list → ID param_list_rest | ε
     "param_list_rest": [["tk_coma", "id", "param_list_rest"], []], # param_list_rest → , ID param_list_rest | ε
     'return_stmt': [['return', 'expr']],  # Instrucción de retorno
-    'print_stmt': [['print', 'tk_par_izq', 'expr', 'tk_par_der']],  # Sentencia de impresión
+    'print_stmt': [['print', 'tk_par_izq', 'print_expr', 'tk_par_der']],  # Sentencia de impresión
+    'print_expr': [['expr', 'print_tail'], []],
+    'print_tail': [['tk_coma', 'expr', 'print_tail'], []],
     'import_stmt': [['import', 'id_list'], ['from', 'id', 'import', 'id_list']],  # Instrucción de importación
     'class_stmt': [['class', 'id', 'class_body']],
     'class_body': [
@@ -74,7 +76,8 @@ productions = {
                ['tk_corchete_izq', 'items', 'tk_corchete_der'], 
                ['tk_llave_izq', 'dict', 'tk_llave_der'],  
                ['num'], ['True'], ['False'], ['not', 'factor'], 
-               ['tk_par_izq', 'items', 'tk_par_der']],  # factor → ( expr ) | ID | NUM | { dict } | [ num_list ] | True | False
+               ['tk_par_izq', 'items', 'tk_par_der'],
+               ['tk_cadena']],  # factor → ( expr ) | ID | NUM | { dict } | [ num_list ] | True | False
     'factor_tail': [
         ['tk_corchete_izq', 'items', 'tk_corchete_der'],  # Acceso a posición de arreglo
         ['tk_par_izq', 'arg_list', 'tk_par_der'],  # Llamada a función
