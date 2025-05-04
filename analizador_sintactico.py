@@ -37,12 +37,18 @@ productions = {
         ['tk_mayor'],
         ['tk_mod_asig']
     ],
+    'loop_stmt': [['simple_stmt_loop'], ['complx'], ['NEWLINE']],
+    'simple_stmt_loop': [['id', 'assign_stmt'], ['return_stmt'], ['print_stmt'], ['import_stmt'], 
+                        ['break'], ['continue'], ['pass']],
+    'loop_block': [['NEWLINE','TAB','loop_stmts','TABend'], ['simple_stmts_loop']],
+    'loop_stmts': [['loop_stmt', 'loop_stmts'], []],
+    'simple_stmts_loop': [['simple_stmt_loop','NEWLINE']],
     'mod_op':[['expr', 'tk_modulo', 'expr']],
     'if_stmt': [['if', 'condition', 'tk_dos_puntos','block', 'if_tail']],  # luego del IF ejecuta un stmt (otra asignación o un if anidado)
-    'if_tail': [['elif', 'condition', 'tk_dos_puntos','block', 'if_tail'], ['else', 'tk_dos_puntos', 'block'],[]],  
-    'while_stmt': [['while', 'condition', 'tk_dos_puntos','block', 'while_tail']],  # Instrucción while
-    'while_tail': [['else', 'tk_dos_puntos', 'block'],[]], 
-    'for_stmt': [['for', 'id', 'in', 'loop_iterable', 'tk_dos_puntos', 'block']],  # Instrucción for
+    'if_tail': [['elif', 'condition', 'tk_dos_puntos','block', 'if_tail'], ['else', 'tk_dos_puntos', 'block'],[]],
+    'while_stmt': [['while', 'condition', 'tk_dos_puntos', 'loop_block', 'while_tail']],  # Instrucción while
+    'while_tail': [['else', 'tk_dos_puntos', 'block'],[]],
+    'for_stmt': [['for', 'id', 'in', 'loop_iterable', 'tk_dos_puntos', 'loop_block']],  # Instrucción for
     'loop_iterable': [['range', 'tk_par_izq', 'num_list', 'tk_par_der'], ['tk_corchete_izq', 'items', 'tk_corchete_der'], ['id'], ['tk_par_izq', 'items', 'tk_par_der']],  # Rango de números o ID
     'num_list': [['num', 'num_list_rest'],['id'],  []],
     'num_list_rest': [['tk_coma', 'num', 'num_list_rest'],[]],
