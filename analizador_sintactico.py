@@ -80,7 +80,7 @@ productions = {
         ['expr', 'items_array_rest'] # arreglos
         ],
     'items_dos_puntos': [
-        ['id'],           # text[:j]
+        ['expr'],
         [],
     ],
     'items_array_rest': [
@@ -90,7 +90,7 @@ productions = {
     ],
     'items_array_tail': [
         ['expr', 'items_array_rest'],
-        ['id'],
+        ['expr'],
         []
     ],
     'factor': [['tk_par_izq', 'expr', 'tk_par_der'], 
