@@ -52,7 +52,7 @@ productions = {
     'dict': [['pair', 'dict_rest'], []],  # Un diccionario puede ser un par de clave:valor seguido de más pares
     'dict_rest': [['tk_coma', 'pair', 'dict_rest'], []],  # dict_rest → , pair dict_rest | ε
     'pair': [['id', 'tk_dos_puntos', 'expr']],  # par → ID: expr (clave: valor)
-    'condition': [['expr', 'comp_op', 'expr'], ['tk_par_izq','condition' 'tk_par_der']],
+    'condition': [['expr', 'comp_op', 'expr'], ['tk_par_izq','condition' 'tk_par_der'], ['True'], ['False']],
     'comp_op': [['tk_igual'], ['tk_distinto'], ['tk_menor'], ['tk_mayor'], ['tk_menor_igual'], ['tk_mayor_igual']],
     'expr': [['term', 'expr_']],
     'expr_': [['tk_suma', 'term', 'expr_'], 
