@@ -54,8 +54,8 @@ productions = {
     'loop_stmts': [['loop_stmt', 'loop_stmts'], []],
     'simple_stmts_loop': [['simple_stmt_loop','NEWLINE']],
     'mod_op':[['expr', 'tk_modulo', 'expr']],
-    'if_stmt': [['if', 'condition', 'tk_dos_puntos','block', 'if_tail']],  # luego del IF ejecuta un stmt (otra asignación o un if anidado)
-    'if_tail': [['elif', 'condition', 'tk_dos_puntos','block', 'if_tail'], ['else', 'tk_dos_puntos', 'block'],[]],
+    'if_stmt': [['if', 'condition', 'tk_dos_puntos', 'loop_block', 'if_tail']],  # luego del IF ejecuta un stmt (otra asignación o un if anidado)
+    'if_tail': [['elif', 'condition', 'tk_dos_puntos', 'loop_block', 'if_tail'], ['else', 'tk_dos_puntos', 'loop_block'],[]],
     'while_stmt': [['while', 'condition', 'tk_dos_puntos', 'loop_block', 'while_tail']],  # Instrucción while
     'while_tail': [['else', 'tk_dos_puntos', 'loop_block'],[]],
     'for_stmt': [['for', 'id', 'in', 'loop_iterable', 'tk_dos_puntos', 'loop_block']],  # Instrucción for
