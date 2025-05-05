@@ -103,7 +103,8 @@ productions = {
     'dict_rest': [['tk_coma', 'expr', 'pair', 'dict_rest'], []],  # dict_rest → , pair dict_rest | ε
 
     'items_tuple': [
-        ['expr', 'items_rest'] # Mínimo 1 para ser tupla
+        ['expr', 'items_rest'], # Mínimo 1 para ser tupla
+        []
         ],
     'items_rest': [
         ['tk_coma', 'items_rest_tail'], # Más elementos en la tupla
@@ -135,6 +136,7 @@ productions = {
     'factor': [['tk_par_izq', 'expr', 'tk_par_der'], 
                ['id', 'factor_tail'], 
                ['self', 'factor_tail'],
+               ['set_function'],
                ['tk_corchete_izq', 'items_array', 'tk_corchete_der'], 
                ['tk_llave_izq', 'expr','set_dict', 'tk_llave_der'],  
                ['num'], ['True'], ['False'], ['not', 'factor'], 
@@ -146,6 +148,8 @@ productions = {
         ['tk_punto','id','factor_tail'], # llamada a atributo
         []  # ε (solo ID)
     ],
+    'set_function': [['set', 'tk_par_izq', 'items', 'tk_par_der']],  # set()
+    'items': [['tk_cadena'], ['tk_corchete_izq', 'items_array', 'tk_corchete_der', 'factor_tail'], ['tk_par_izq', 'arg_list', 'tk_par_der', 'factor_tail'], []],
     'arg_list': [['expr', 'arg_list_rest'], []],  # Lista de argumentos
     'arg_list_rest': [['tk_coma', 'expr', 'arg_list_rest'], []],  # Lista de argumentos separados por comas
 }
