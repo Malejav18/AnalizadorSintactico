@@ -62,7 +62,7 @@ productions = {
     'while_stmt': [['while', 'condition', 'tk_dos_puntos', 'loop_block', 'while_tail']],  # Instrucción while
     'while_tail': [['else', 'tk_dos_puntos', 'loop_block'],[]],
     'for_stmt': [['for', 'id', 'in', 'loop_iterable', 'tk_dos_puntos', 'loop_block']],  # Instrucción for
-    'loop_iterable': [['range', 'tk_par_izq', 'num_list', 'tk_par_der'], ['tk_corchete_izq', 'items', 'tk_corchete_der'], ['id', 'factor_tail'], ['self', 'factor_tail'], ['tk_par_izq', 'items', 'tk_par_der']],  # Rango de números o ID
+    'loop_iterable': [['range', 'tk_par_izq', 'num_list', 'tk_par_der'], ['tk_corchete_izq', 'items_array', 'tk_corchete_der'], ['id', 'factor_tail'], ['self', 'factor_tail'], ['tk_par_izq', 'items_tuple', 'tk_par_der']],  # Rango de números o ID
     
     'try_stmt': [['try', 'tk_dos_puntos', 'loop_block', 'try_stmt_tail']], # try: except: finally:
     'try_stmt_tail': [['except_stmt', 'finally_stmt']],
