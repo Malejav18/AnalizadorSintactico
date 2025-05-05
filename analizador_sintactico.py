@@ -80,6 +80,15 @@ productions = {
               []],
     'term': [['factor', 'term_']],
     'term_': [['tk_mult', 'factor', 'term_'], ['tk_div', 'factor', 'term_'], []],
+    
+    'set_dict': [['items_set'], ['items_dict'], []],  # Un conjunto puede ser una lista de elementos o un diccionario
+
+    'items_set': [['items_rest'], []],  # Un conjunto puede ser una lista de elementos
+
+    'items_dict': [['pair', 'dict_rest'], []],  # Un diccionario puede ser un par de clave:valor seguido de más pares
+    'pair': [['tk_dos_puntos', 'expr']],  # par → ID: expr (clave: valor)
+    'dict_rest': [['tk_coma', 'expr', 'pair', 'dict_rest'], []],  # dict_rest → , pair dict_rest | ε
+
     'items_tuple': [
         ['expr', 'items_rest'] # Mínimo 1 para ser tupla
         ],
@@ -112,10 +121,10 @@ productions = {
     'factor': [['tk_par_izq', 'expr', 'tk_par_der'], 
                ['id', 'factor_tail'], 
                ['tk_corchete_izq', 'items_array', 'tk_corchete_der'], 
-               ['tk_llave_izq', 'dict', 'tk_llave_der'],  
+               ['tk_llave_izq', 'expr','set_dict', 'tk_llave_der'],  
                ['num'], ['True'], ['False'], ['not', 'factor'], 
                ['tk_par_izq', 'items_tuple', 'tk_par_der'],
-               ['tk_cadena']],  # factor → ( expr ) | ID | NUM | { dict } | [ num_list ] | True | False
+               ['tk_cadena']],  # factor → ( expr ) | ID | NUM | { set_dict } | [ num_list ] | True | False
     'factor_tail': [
         ['tk_corchete_izq', 'items_array', 'tk_corchete_der'],  # Acceso a posición de arreglo
         ['tk_par_izq', 'arg_list', 'tk_par_der'],  # Llamada a función
