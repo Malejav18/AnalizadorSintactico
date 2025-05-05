@@ -8,11 +8,12 @@ productions = {
     'stmts_':[['stmt','stmts_'],[]],
     'stmt': [['simple_stmts'],['complx']],
     'simple_stmts':[['simple_stmt','NEWLINE']],
-    'simple_stmt':[['id','assign_stmt'], ['return_stmt'], ['print_stmt'], ['import_stmt']],
-    'complx': [['def_stmt'], ['if_stmt'], ['while_stmt'], ['for_stmt'], ['class_stmt'], ['try_stmt']],  # stmt → assign_stmt | def_stmt | if_stmt | return_stmt
-    
-    'def_stmt': [['def', 'id', 'tk_par_izq', 'param_list', 'tk_par_der', 'tk_dos_puntos','block']],
-    "param_list": [["id", "param_structure", "param_list_rest"],[]],  # param_list → id param_list_rest | ε
+    'simple_stmt':[['id','assign_stmt'], ['self','assign_stmt'], ['return_stmt'], ['print_stmt'], ['import_stmt']],
+    'complx': [['def', 'def_stmt'], ['if_stmt'], ['while_stmt'], ['for_stmt'], ['class_stmt'], ['try_stmt']],  # stmt → assign_stmt | def_stmt | if_stmt | return_stmt
+    'def_stmt': [['def_init_stmt'], ['def_normal_stmt']],
+    'def_init_stmt': [['__init__', 'tk_par_izq', 'param_list', 'tk_par_der', 'tk_dos_puntos','block']],
+    'def_normal_stmt': [['id', 'tk_par_izq', 'param_list', 'tk_par_der', 'tk_dos_puntos','block']],
+    "param_list": [["id", "param_structure", "param_list_rest"],["self", "param_structure", "param_list_rest"],[]],  # param_list → id param_list_rest | ε
     "param_list_rest": [["tk_coma", "param_list"], []],  # param_list_rest → , id param_list_rest | ε
     "param_structure": [["tk_dos_puntos", "param_list_complex"],[]],  # param_structure → id : tipos_datos | id : tipo_lista
     "param_list_complex": [['tipo_lista', "tk_corchete_izq",'lista_tipos_datos', "tk_corchete_der"], ["tk_corchete_izq", 'tipos_datos', "tk_corchete_der"], ["tipos_datos"], []],  # param_list_complex → id param_list_rest | ε
@@ -28,6 +29,7 @@ productions = {
     'print_expr': [['expr', 'print_tail'], []],
     'print_tail': [['tk_coma', 'expr', 'print_tail'], []],
     'import_stmt': [['import', 'id_list'], ['import', 'id_list'], ['from', 'id', 'import', 'id_list']],  # Instrucción de importación
+
     'class_stmt': [['class', 'id', 'class_body']],
     'class_body': [
         ['tk_dos_puntos', 'block'],  # class_body → : stmt
@@ -36,7 +38,8 @@ productions = {
     'block':[['NEWLINE','TAB', 'stmts_','TABend'],['simple_stmts']],
     'id_list': [['id', 'id_list_rest']],
     'id_list_rest': [['tk_coma', 'id', 'id_list_rest'], ['as', 'id'], []],
-    'assign_stmt': [['assign_op', 'expr'],['factor_tail']],
+    'assign_stmt': [['assign_op', 'expr'],['factor_tail', 'assignment']],
+    'assignment': [['assign_op', 'expr'], []],  # Asignación a atributo
     'assign_op': [
         ['tk_asig'],
         ['tk_mas_asig'],
@@ -59,22 +62,25 @@ productions = {
     'while_stmt': [['while', 'condition', 'tk_dos_puntos', 'loop_block', 'while_tail']],  # Instrucción while
     'while_tail': [['else', 'tk_dos_puntos', 'loop_block'],[]],
     'for_stmt': [['for', 'id', 'in', 'loop_iterable', 'tk_dos_puntos', 'loop_block']],  # Instrucción for
-    'loop_iterable': [['range', 'tk_par_izq', 'num_list', 'tk_par_der'], ['tk_corchete_izq', 'items', 'tk_corchete_der'], ['id'], ['tk_par_izq', 'items', 'tk_par_der']],  # Rango de números o ID
-    'except_e': [['id'], []],
+    'loop_iterable': [['range', 'tk_par_izq', 'num_list', 'tk_par_der'], ['tk_corchete_izq', 'items', 'tk_corchete_der'], ['id', 'factor_tail'], ['self', 'factor_tail'], ['tk_par_izq', 'items', 'tk_par_der']],  # Rango de números o ID
+    
     'try_stmt': [['try', 'tk_dos_puntos', 'loop_block', 'try_stmt_tail']], # try: except: finally:
     'try_stmt_tail': [['except_stmt', 'finally_stmt']],
     'except_stmt': [['except', 'except_e', 'tk_dos_puntos', 'loop_block', 'except_try'], []],
     'except_try': [['except_stmt'], ['try_else'], []],
+    'except_e': [['id'], []],
     'try_else': [['else', 'tk_dos_puntos', 'loop_block'], []],
     'finally_stmt': [['finally', 'tk_dos_puntos', 'loop_block'], []],
+
     'num_list': [['num', 'num_list_rest'],['id'],  []],
     'num_list_rest': [['tk_coma', 'num', 'num_list_rest'],[]],
     'num': [['tk_entero','num.'],['tk_punto','tk_entero']],
     'num.':[['tk_punto','num.num'],[]],
     'num.num':[['tk_entero'],[]],
-    'dict': [['pair', 'dict_rest'], []],  # Un diccionario puede ser un par de clave:valor seguido de más pares
-    'dict_rest': [['tk_coma', 'pair', 'dict_rest'], []],  # dict_rest → , pair dict_rest | ε
-    'pair': [['id', 'tk_dos_puntos', 'expr']],  # par → ID: expr (clave: valor)
+
+
+    
+
     'condition': [['expr', 'condition_tail'], ['tk_par_izq','condition' 'tk_par_der'], ['True'], ['False']],
     'condition_tail': [['in', 'id'], ['comp_op', 'expr'], []],
     'comp_op': [['tk_igual'], ['tk_distinto'], ['tk_menor'], ['tk_mayor'], ['tk_menor_igual'], ['tk_mayor_igual']],
@@ -87,7 +93,7 @@ productions = {
               []],
     'term': [['factor', 'term_']],
     'term_': [['tk_mult', 'factor', 'term_'], ['tk_div', 'factor', 'term_'], []],
-    
+
     'set_dict': [['items_set'], ['items_dict'], []],  # Un conjunto puede ser una lista de elementos o un diccionario
 
     'items_set': [['items_rest'], []],  # Un conjunto puede ser una lista de elementos
@@ -109,7 +115,8 @@ productions = {
     ],
     'items_array': [
         ['tk_dos_puntos', 'items_dos_puntos'],
-        ['expr', 'items_array_rest'] # arreglos
+        ['expr', 'items_array_rest'], 
+        []
         ],
     'items_dos_puntos': [
         ['expr'],
@@ -127,14 +134,15 @@ productions = {
     ],
     'factor': [['tk_par_izq', 'expr', 'tk_par_der'], 
                ['id', 'factor_tail'], 
+               ['self', 'factor_tail'],
                ['tk_corchete_izq', 'items_array', 'tk_corchete_der'], 
                ['tk_llave_izq', 'expr','set_dict', 'tk_llave_der'],  
                ['num'], ['True'], ['False'], ['not', 'factor'], 
                ['tk_par_izq', 'items_tuple', 'tk_par_der'],
                ['tk_cadena']],  # factor → ( expr ) | ID | NUM | { set_dict } | [ num_list ] | True | False
     'factor_tail': [
-        ['tk_corchete_izq', 'items_array', 'tk_corchete_der'],  # Acceso a posición de arreglo
-        ['tk_par_izq', 'arg_list', 'tk_par_der'],  # Llamada a función
+        ['tk_corchete_izq', 'items_array', 'tk_corchete_der', 'factor_tail'],  # Acceso a posición de arreglo
+        ['tk_par_izq', 'arg_list', 'tk_par_der', 'factor_tail'],  # Llamada a función
         ['tk_punto','id','factor_tail'], # llamada a atributo
         []  # ε (solo ID)
     ],
