@@ -137,6 +137,8 @@ productions = {
                ['id', 'factor_tail'], 
                ['self', 'factor_tail'],
                ['set_function'],
+               ['list_function'],
+               ['tuple_function'],
                ['tk_corchete_izq', 'items_array', 'tk_corchete_der'], 
                ['tk_llave_izq', 'expr','set_dict', 'tk_llave_der'],  
                ['num'], ['True'], ['False'], ['not', 'factor'], 
@@ -149,6 +151,8 @@ productions = {
         []  # ε (solo ID)
     ],
     'set_function': [['set', 'tk_par_izq', 'items', 'tk_par_der']],  # set()
+    'list_function': [['list', 'tk_par_izq', 'items', 'tk_par_der']],  # list()
+    'tuple_function': [['tuple', 'tk_par_izq', 'items', 'tk_par_der']],  # tuple()
     'items': [['tk_cadena'], ['tk_corchete_izq', 'items_array', 'tk_corchete_der', 'factor_tail'], ['tk_par_izq', 'arg_list', 'tk_par_der', 'factor_tail'], []],
     'arg_list': [['expr', 'arg_list_rest'], []],  # Lista de argumentos
     'arg_list_rest': [['tk_coma', 'expr', 'arg_list_rest'], []],  # Lista de argumentos separados por comas
