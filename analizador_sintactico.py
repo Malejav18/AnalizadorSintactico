@@ -9,7 +9,7 @@ productions = {
     'stmt': [['simple_stmts'],['complx']],
     'simple_stmts':[['simple_stmt','NEWLINE']],
     'simple_stmt':[['id','assign_stmt'], ['return_stmt'], ['print_stmt'], ['import_stmt']],
-    'complx': [['def_stmt'], ['if_stmt'], ['while_stmt'], ['for_stmt'], ['class_stmt']],  # stmt → assign_stmt | def_stmt | if_stmt | return_stmt
+    'complx': [['def_stmt'], ['if_stmt'], ['while_stmt'], ['for_stmt'], ['class_stmt'], ['try_stmt']],  # stmt → assign_stmt | def_stmt | if_stmt | return_stmt
     
     'def_stmt': [['def', 'id', 'tk_par_izq', 'param_list', 'tk_par_der', 'tk_dos_puntos','block']],
     "param_list": [["id", "param_structure", "param_list_rest"],[]],  # param_list → id param_list_rest | ε
@@ -60,6 +60,11 @@ productions = {
     'while_tail': [['else', 'tk_dos_puntos', 'loop_block'],[]],
     'for_stmt': [['for', 'id', 'in', 'loop_iterable', 'tk_dos_puntos', 'loop_block']],  # Instrucción for
     'loop_iterable': [['range', 'tk_par_izq', 'num_list', 'tk_par_der'], ['tk_corchete_izq', 'items', 'tk_corchete_der'], ['id'], ['tk_par_izq', 'items', 'tk_par_der']],  # Rango de números o ID
+    'try_stmt': [['try', 'tk_dos_puntos', 'loop_block', 'try_stmt_tail']], # try: except: finally:
+    'try_stmt_tail': [['except_stmt', 'finally_stmt']],
+    'except_stmt': [['except', 'except_e', 'tk_dos_puntos', 'loop_block']],
+    'except_e': [['id'], []],
+    'finally_stmt': [['finally', 'tk_dos_puntos', 'loop_block'], []],
     'num_list': [['num', 'num_list_rest'],['id'],  []],
     'num_list_rest': [['tk_coma', 'num', 'num_list_rest'],[]],
     'num': [['tk_entero','num.'],['tk_punto','tk_entero']],
