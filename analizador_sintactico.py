@@ -8,7 +8,7 @@ productions = {
     'stmts_':[['stmt','stmts_'],[]],
     'stmt': [['simple_stmts'],['complx']],
     'simple_stmts':[['simple_stmt','NEWLINE']],
-    'simple_stmt':[['id','assign_stmt'], ['self','assign_stmt'], ['return_stmt'], ['print_stmt'], ['import_stmt']],
+    'simple_stmt':[['id','assign_stmt'], ['self','assign_stmt'], ['return_stmt'], ['print_stmt'], ['import_stmt'], ['pass']],
     'complx': [['def', 'def_stmt'], ['if_stmt'], ['while_stmt'], ['for_stmt'], ['class_stmt'], ['try_stmt']],  # stmt → assign_stmt | def_stmt | if_stmt | return_stmt
     'def_stmt': [['def_init_stmt'], ['def_normal_stmt']],
     'def_init_stmt': [['__init__', 'tk_par_izq', 'param_list', 'tk_par_der', 'tk_dos_puntos','block']],
@@ -279,7 +279,19 @@ class LL1Interpreter:
                         exp=tokens[top]
                     else:
                         exp=top
-                    print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: \"{exp}\"")
+                        arr = [exp]
+                        if exp == 'TAB':
+                            print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: Falla en Indentacion")
+                            return False
+                        try:
+                            top2 = self.stack.pop()
+                            if top2 not in non_terminals:
+                                arr.append(top2)
+                                print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: \"{exp}\" o \"{top2}\"")
+                            else:
+                                print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: \"{exp}\"")
+                        except:
+                            print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: \"{exp}\"")
                     return False
             else:  # Si es un no terminal
                 rule = self.table.get(top, {}).get(tok)
@@ -292,8 +304,14 @@ class LL1Interpreter:
                             exp= exp+ '"'+tokens[i]+'", '
                         else:
                             exp= exp+ '"'+i+'", '
-                    
-                    print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: {exp[:-2]}")
+                    try:
+                        top2 = self.stack.pop()
+                        if top2 not in non_terminals:
+                            print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: {exp[:-2]} o {top2}")
+                        else:
+                            print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: {exp[:-2]}")
+                    except:
+                        print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: {exp[:-2]}")
                     return False
                 self.debug(f"Aplicar: {top} → {' '.join(rule) if rule else 'ε'}")
                 # Si la regla es vacía (ε), no hacemos nada
@@ -344,6 +362,14 @@ def token_tab_newl(tokens):
     return(tokens)
 
 
+def verificar_errores_lexicos(ruta_archivo_tokens):
+    with open(ruta_archivo_tokens, 'r', encoding='utf-8') as f:
+        for linea in f:
+            if linea.startswith(">>> Error léxico"):
+                print(linea.strip())
+                exit(1)
+
+
 # Código de entrada
 
 if len(sys.argv) != 2:
@@ -357,6 +383,7 @@ else:
             input_text = file.read() 
 
         analizador_lexico(input_text, salida) 
+        verificar_errores_lexicos(salida)
 
         #print(f"Análisis léxico completado. Resultados guardados en '{salida}'.")
 
