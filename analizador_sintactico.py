@@ -81,7 +81,7 @@ productions = {
 
     
 
-    'condition': [['expr', 'condition_tail'], ['tk_par_izq','condition' 'tk_par_der'], ['True'], ['False']],
+    'condition': [['expr', 'condition_tail'], ['tk_par_izq','condition', 'tk_par_der'], ['True'], ['False']],
     'condition_tail': [['in', 'id'], ['comp_op', 'expr'], []],
     'comp_op': [['tk_igual'], ['tk_distinto'], ['tk_menor'], ['tk_mayor'], ['tk_menor_igual'], ['tk_mayor_igual']],
     'expr': [['term', 'expr_']],
@@ -157,7 +157,6 @@ productions = {
     'arg_list': [['expr', 'arg_list_rest'], []],  # Lista de argumentos
     'arg_list_rest': [['tk_coma', 'expr', 'arg_list_rest'], []],  # Lista de argumentos separados por comas
 }
-
 
 # Conjunto de no terminales
 non_terminals = set(productions.keys())
@@ -247,8 +246,8 @@ def build_predict_table(first, follow):
     return table
 
 class LL1Interpreter:
-    def __init__(self, tokens, table):
-        self.tokens = tokens  # Lista de tokens
+    def __init__(self, Ltokens, table):
+        self.tokens = Ltokens  # Lista de tokens
         self.table = table    # Tabla predictiva
         self.pos = 0          # Posición actual en los tokens
         self.stack = ['stmts'] # Pila inicial con el símbolo inicial
@@ -257,12 +256,17 @@ class LL1Interpreter:
         return (self.tokens[self.pos])  # Obtener el tipo del token actual
 
     def debug(self, action):
-        print(f"[PILA: {self.stack} | TOKEN: {tipo_tk(self.tokens[self.pos])}] -> {action}")
+        #print(f"[PILA: {self.stack} | TOKEN: {tipo_tk(self.tokens[self.pos])}] -> {action}")
+        pass
 
     def parse(self):
         while self.stack:
             top = self.stack.pop()  # Obtener el símbolo en la cima de la pila
             tok = tipo_tk(self.current_token())
+            if tok in tokens:
+                res=tokens[tok]
+            else:
+                res=tok
             if top == 'ε':  # Ignorar ε
                 self.debug("Ignorar ε")
                 continue
@@ -271,12 +275,25 @@ class LL1Interpreter:
                     self.debug(f"Consumir '{tok}'")
                     self.pos += 1
                 else:
-                    self.debug(f"❌ Error en {sacar_pos(self.current_token())}: esperado {top}, encontrado {tok}")
+                    if top in tokens:
+                        exp=tokens[top]
+                    else:
+                        exp=top
+                    print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: \"{exp}\"")
                     return False
             else:  # Si es un no terminal
                 rule = self.table.get(top, {}).get(tok)
                 if rule is None:
-                    self.debug(f"❌ Error en {sacar_pos(self.current_token())}: sin regla para ({top}, {tok})")
+                    exp=""
+                    for i in self.table.get(top, {}).keys():
+                        if(self.table.get(top, {}).get(i)==[]):
+                            continue
+                        elif i in tokens:
+                            exp= exp+ '"'+tokens[i]+'", '
+                        else:
+                            exp= exp+ '"'+i+'", '
+                    
+                    print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: {exp[:-2]}")
                     return False
                 self.debug(f"Aplicar: {top} → {' '.join(rule) if rule else 'ε'}")
                 # Si la regla es vacía (ε), no hacemos nada
@@ -324,7 +341,6 @@ def token_tab_newl(tokens):
         tabs.pop()
         tokens.append(f"<TABend,{pos[0]},{pos[1]}>")
     tokens.append(f'<EOF,{pos[0]},{pos[1]}>')
-    print(tokens)
     return(tokens)
 
 
@@ -369,10 +385,7 @@ tokens = token_tab_newl(content.splitlines())
 
 parser = LL1Interpreter(tokens, table)
 
-print("\n🔍 Parsing...\n")
 accepted = parser.parse()
 
 if accepted:
-    print("\n✔ Cadena aceptada")
-else:
-    print("\n❌ Cadena rechazada")
+    print('\n"El analisis sintactico ha finalizado exitosamente."')
