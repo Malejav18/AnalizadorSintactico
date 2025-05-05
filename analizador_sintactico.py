@@ -61,9 +61,10 @@ productions = {
     'for_stmt': [['for', 'id', 'in', 'loop_iterable', 'tk_dos_puntos', 'loop_block']],  # Instrucción for
     'loop_iterable': [['range', 'tk_par_izq', 'num_list', 'tk_par_der'], ['tk_corchete_izq', 'items', 'tk_corchete_der'], ['id'], ['tk_par_izq', 'items', 'tk_par_der']],  # Rango de números o ID
     'try_stmt': [['try', 'tk_dos_puntos', 'loop_block', 'try_stmt_tail']], # try: except: finally:
-    'try_stmt_tail': [['except_stmt', 'finally_stmt']],
-    'except_stmt': [['except', 'except_e', 'tk_dos_puntos', 'loop_block']],
+    'try_stmt_tail': [['except_stmt', 'try_else', 'finally_stmt']],
+    'except_stmt': [['except', 'except_e', 'tk_dos_puntos', 'loop_block', 'except_stmt'], []],
     'except_e': [['id'], []],
+    'try_else': [['else', 'tk_dos_puntos', 'loop_block'], []],
     'finally_stmt': [['finally', 'tk_dos_puntos', 'loop_block'], []],
     'num_list': [['num', 'num_list_rest'],['id'],  []],
     'num_list_rest': [['tk_coma', 'num', 'num_list_rest'],[]],
