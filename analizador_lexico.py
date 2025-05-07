@@ -3,7 +3,7 @@ from tokens_palabras import palabras_reservadas_librerias
 
 # Definir los tokens y palabras reservadas
 # Cada token tiene asociado su representación en el lenguaje.
-tokens = {
+char_tokens = {
     'tk_ejecuta': '->', 
     'tk_potencia': '**', 
     'tk_mayor_igual': '>=', 
@@ -111,7 +111,7 @@ def es_identificador(cadena):
     return True
 
 def es_token(char):
-    if char in tokens.values():
+    if char in char_tokens.values():
         return True
     return False
 
@@ -138,7 +138,7 @@ def analizador_lexico(codigo, salida):
 
     lineas = codigo.split('\n')  # Divide el código en líneas
     
-    lista_tokens = sorted(tokens.items(), key=lambda x: len(x[1]), reverse=True)  # Ordena los tokens en una lista por longitud descendente
+    lista_tokens = sorted(char_tokens.items(), key=lambda x: len(x[1]), reverse=True)  # Ordena los tokens en una lista por longitud descendente
 
     # Abre el archivo de salida para escribir los resultados
     with open(salida, 'w', encoding='utf-8') as output_file:
@@ -240,7 +240,7 @@ def analizador_lexico(codigo, salida):
                     return  # Finaliza la ejecución
 
                 #Error Léxico por palabra desconocida
-                if char == " " or char in tokens.values():  # Si el carácter es un espacio o un token
+                if char == " " or char in char_tokens.values():  # Si el carácter es un espacio o un token
                     if palabra:
                         if palabra in palabras_reservadas: # Si la palabra es una palabra reservada
                             output_file.write(f"<{palabra}, {fila}, {columna - len(palabra)}>\n")
