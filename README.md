@@ -17,6 +17,7 @@ Se implementa un programa en Python que recibe un archivo py como entrada y devu
 
 - **Python** (versión 3 o superior)
 
+
 ## 💥 Características
 
 ### ✅ Funcionalidades compatibles
