@@ -56,13 +56,18 @@ Las siguientes características **no están soportadas** actualmente:
 ## 👾 Modo de Uso:
 1. Descarga los archivos adjuntos.
 2. Escribe tu código dentro de "codigo.py", o usa el código de ejemplo.
-3. Ejecuta el siguiente comando:
+3. Ejecuta el siguiente comando para el analizador léxico:
 
 ```
 python3 analizador_lexico.py codigo.py
 ```
 
+4. Ejecuta el siguiente comando para el analizador sintáctico: 
 Como ejemplo prueba tenemos:
+
+```
+python3 analizador_sintactico.py codigo.py
+```
 
 Codigo.py
 ```
