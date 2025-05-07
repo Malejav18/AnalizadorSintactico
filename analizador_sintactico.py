@@ -256,22 +256,13 @@ class LL1Interpreter:
                         exp=char_tokens[top]
                     else:
                         exp=top
-                        arr = [exp]
+
                     if exp == 'TAB':
                         print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: Falla en Indentacion")
                         return False
-                    try:
-                        top2 = self.stack.pop()
-                        if top2 not in non_terminals:
-                            arr.append(top2)
-                            print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: \"{exp}\", \"{top2}\"")
-                        else:
-                            print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: \"{exp}\"")
-                    except:
+                    else:
                         print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: \"{exp}\"")
-                    
                     return False
-                
             else:  # Si es un no terminal
                 rule = self.table.get(top, {}).get(tok)
                 if rule is None:
