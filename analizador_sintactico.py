@@ -1,21 +1,20 @@
-from collections import defaultdict  # Importa defaultdict para estructuras de datos con valores por defecto
-from analizador_lexico import *     # Importa todos los tokens y funciones del analizador léxico (definiciones de tokens)
-import sys                          # Permite acceder a funciones del sistema, como la entrada y salida estándar
+from collections import defaultdict # Importa defaultdict para estructuras de datos con valores por defecto
+from analizador_lexico import * # Importa todos los tokens y funciones del analizador léxico (definiciones de tokens)
+import sys # Permite acceder a funciones del sistema, como la entrada y salida estándar
 
 # Gramática de la producción
 productions = {
-    'stmts':[['stmt','stmts_','EOF']],  # Programa completo: una o más sentencias y fin de archivo
-    'stmts_':[['stmt','stmts_'],[]],    # Lista recursiva de sentencias o vacío
-    'stmt': [['simple_stmts'],['complx']],  # Una sentencia puede ser simple o compleja
-    'simple_stmts':[['simple_stmt','NEWLINE']],  # Sentencia simple seguida de salto de línea
-    'simple_stmt':[['id','assign_stmt'], ['self','assign_stmt'], ['return_stmt'], 
-                   ['print_stmt'], ['import_stmt'], ['pass']],  # Sentencias básicas
+    'stmts':[['stmt','stmts_','EOF']], # Programa completo: una o más sentencias y fin de archivo
+    'stmts_':[['stmt','stmts_'],[]], # Lista recursiva de sentencias o vacío
+    'stmt': [['simple_stmts'],['complx']], # Una sentencia puede ser simple o compleja
+    'simple_stmts':[['simple_stmt','NEWLINE']], # Sentencia simple seguida de salto de línea
+    'simple_stmt':[['id','assign_stmt'], ['self','assign_stmt'], ['return_stmt'], ['print_stmt'], ['import_stmt'], ['pass']], # Sentencias básicas
     'complx': [['def', 'def_stmt'], ['if_stmt'], ['while_stmt'], ['for_stmt'], ['class_stmt'], ['try_stmt']],  # stmt → assign_stmt | def_stmt | if_stmt | return_stmt
     'def_stmt': [['def_init_stmt'], ['def_normal_stmt']], # Funciones __init__ o normales
     'def_init_stmt': [['__init__', 'tk_par_izq', 'param_list', 'tk_par_der', 'tk_dos_puntos','block']],
     'def_normal_stmt': [['id', 'tk_par_izq', 'param_list', 'tk_par_der', 'tk_dos_puntos','block']],
-    "param_list": [["id", "param_structure", "param_list_rest"],["self", "param_structure", "param_list_rest"],[]],  # Lista de parámetros opcionales
-    "param_list_rest": [["tk_coma", "param_list"], []],  # Comas adicionales
+    "param_list": [["id", "param_structure", "param_list_rest"],["self", "param_structure", "param_list_rest"],[]], # Lista de parámetros opcionales
+    "param_list_rest": [["tk_coma", "param_list"], []], # Comas adicionales
     "param_structure": [["tk_dos_puntos", "param_list_complex"],[]],  # param_structure → id : tipos_datos | id : tipo_lista
     "param_list_complex": [['tipo_lista', "tk_corchete_izq",'lista_tipos_datos', "tk_corchete_der"], ["tk_corchete_izq", 'tipos_datos', "tk_corchete_der"], ["tipos_datos"], []],  # Tipos complejos como listas, sets, etc.
     "param_list_rest_2": [["tk_coma", "id", "param_list_rest_2"], []],  # Lista adicional de parámetros
@@ -65,7 +64,7 @@ productions = {
     'while_stmt': [['while', 'condition', 'tk_dos_puntos', 'loop_block', 'while_tail']],  # Instrucción while
     'while_tail': [['else', 'tk_dos_puntos', 'loop_block'],[]],
     'for_stmt': [['for', 'id', 'in', 'loop_iterable', 'tk_dos_puntos', 'loop_block']],  # Instrucción for
-    'loop_iterable': [['range', 'tk_par_izq', 'items_tuple', 'tk_par_der'], ['tk_corchete_izq', 'items_array', 'tk_corchete_der'], ['id', 'factor_tail'], ['self', 'factor_tail'], ['tk_par_izq', 'items_tuple', 'tk_par_der']],  # Rango de números o ID
+    'loop_iterable': [['range', 'tk_par_izq', 'items_tuple', 'tk_par_der'], ['tk_corchete_izq', 'items_array', 'tk_corchete_der'], ['id', 'factor_tail'], ['self', 'factor_tail'], ['tk_par_izq', 'items_tuple', 'tk_par_der'],['tk_cadena']],  # Rango de números o ID
     # Try/Except
     'try_stmt': [['try', 'tk_dos_puntos', 'loop_block', 'try_stmt_tail']], # try: except: finally:
     'try_stmt_tail': [['except_stmt', 'finally_stmt']],
@@ -103,12 +102,12 @@ productions = {
     'items_tuple': [['expr', 'items_rest'], []], # Mínimo 1 para ser tupla
     'items_rest': [['tk_coma', 'items_rest_tail'], []], # Más elementos en la tupla
     'items_rest_tail': [['expr', 'items_rest'],[]],
-    'items_array': [['tk_dos_puntos', 'items_dos_puntos'],['expr', 'items_array_rest'], []],
+    'items_array': [['tk_dos_puntos', 'items_dos_puntos'],
+                    ['expr', 'items_array_rest'],[]],
     'items_dos_puntos': [['expr'],[],],
     'items_array_rest': [['tk_coma', 'items_rest_tail'],
-                         ['tk_dos_puntos', 'items_array_tail'], 
-                         ['for','id','in','loop_iterable','list_if'], []],
-    'list_if':[['if','condition'],[]],
+        ['tk_dos_puntos', 'items_array_tail'],   # text[i:j]
+        ['for','id','in','loop_iterable'],[]],
     'items_array_tail': [['expr', 'items_array_rest'],['expr'],[]],
     # Factores (componentes básicos de expresiones)
     'factor': [['tk_par_izq', 'expr', 'tk_par_der'], 
@@ -255,15 +254,14 @@ class LL1Interpreter:
                 else:
                     if top in char_tokens:
                         exp=char_tokens[top]
-
                     else:
                         exp=top
 
-                        if exp == 'TAB':
-                            print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: Falla en Indentacion")
-                            return False
-                        else:
-                            print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: \"{exp}\"")
+                    if exp == 'TAB':
+                        print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: Falla en Indentacion")
+                        return False
+                    else:
+                        print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: \"{exp}\"")
                     return False
             else:  # Si es un no terminal
                 rule = self.table.get(top, {}).get(tok)
