@@ -33,13 +33,13 @@ Este proyecto admite las siguientes características básicas de Python:
 * Uso de `print` para mostrar resultados
 * Sentencias de control: `break`, `pass`, `continue`
 * Manejo de excepciones: `try`, `except`, `else`, `finally`
-* Encadenamiento de métodos: `obj.metodo().metodo2()`
-* Uso del constructor `__init__` y `self` en clases
-* Acceso a atributos y métodos con notación de punto (`obj.metodo()`, `obj.id`)
 * Manejo de cadenas de texto (strings)
 * Operadores compuestos (como `+=`, `-=`, etc.)
-* Uso de `set()` para crear conjuntos
+* Uso de `set()`, `list()` y `tuple()` para crear conjuntos
 * Clases simples con `class`, `self` y `__init__`
+* Uso del constructor `__init__` y `self`
+* Encadenamiento de métodos y atributos: `obj.metodo().metodo2()`
+* Acceso a atributos y métodos con notación de punto (`obj.metodo()`, `obj.id`)
 
 
 ### ❌ Funcionalidades no compatibles
@@ -49,7 +49,7 @@ Las siguientes características **no están soportadas** actualmente:
 * Evaluación directa de expresiones como `2 + 3`
 * Cadenas formateadas con `f""` (f-strings)
 * Listas por comprensión, como: `[x for x in arr if x % 2 == 0]`
-* Uso de `super().__init__()` en clases (POO avanzada)
+* Uso de `super().__init__()` en clases
 * Uso de `__init__` funciona, pero no puede llamarse directamente
 
 
