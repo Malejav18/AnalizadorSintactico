@@ -28,7 +28,7 @@ productions = {
     'print_stmt': [['print', 'tk_par_izq', 'print_expr', 'tk_par_der']],  # Sentencia de impresión
     'print_expr': [['expr', 'print_tail'], []],
     'print_tail': [['tk_coma', 'expr', 'print_tail'], []],
-    'import_stmt': [['import', 'id_list'], ['import', 'id_list'], ['from', 'id', 'import', 'id_list']],  # Instrucción de importación
+    'import_stmt': [['import', 'id_list'], ['from', 'id', 'import', 'id_list']],  # Instrucción de importación
 
     'class_stmt': [['class', 'id', 'class_body']],
     'class_body': [
@@ -56,7 +56,6 @@ productions = {
     'loop_block': [['NEWLINE','TAB','loop_stmts','TABend'], ['simple_stmts_loop']],
     'loop_stmts': [['loop_stmt', 'loop_stmts'], []],
     'simple_stmts_loop': [['simple_stmt_loop','NEWLINE']],
-    'mod_op':[['expr', 'tk_modulo', 'expr']],
     'if_stmt': [['if', 'condition', 'tk_dos_puntos', 'loop_block', 'if_tail']],  # luego del IF ejecuta un stmt (otra asignación o un if anidado)
     'if_tail': [['elif', 'condition', 'tk_dos_puntos', 'loop_block', 'if_tail'], ['else', 'tk_dos_puntos', 'loop_block'],[]],
     'while_stmt': [['while', 'condition', 'tk_dos_puntos', 'loop_block', 'while_tail']],  # Instrucción while
@@ -76,10 +75,7 @@ productions = {
     'num_list_rest': [['tk_coma', 'num', 'num_list_rest'],[]],
     'num': [['tk_entero','num.'],['tk_punto','tk_entero']],
     'num.':[['tk_punto','num.num'],[]],
-    'num.num':[['tk_entero'],[]],
-
-
-    
+    'num.num':[['tk_entero'],[]],    
 
     'condition': [['expr', 'condition_tail'], ['tk_par_izq','condition', 'tk_par_der'], ['True'], ['False']],
     'condition_tail': [['in', 'id'], ['comp_op', 'expr'], []],
@@ -92,7 +88,7 @@ productions = {
               ['or', 'term', 'expr_'],   
               []],
     'term': [['factor', 'term_']],
-    'term_': [['tk_mult', 'factor', 'term_'], ['tk_div', 'factor', 'term_'], []],
+    'term_': [['tk_mult', 'factor', 'term_'], ['tk_div', 'factor', 'term_'], ['tk_modulo', 'factor', 'term_'], []],
 
     'set_dict': [['items_set'], ['items_dict'], []],  # Un conjunto puede ser una lista de elementos o un diccionario
 
