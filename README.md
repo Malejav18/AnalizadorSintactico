@@ -41,7 +41,6 @@ Este proyecto admite las siguientes características básicas de Python:
 * Uso de `set()` para crear conjuntos
 * Clases simples con `class`, `self` y `__init__`
 
----
 
 ### ❌ Funcionalidades no compatibles
 
