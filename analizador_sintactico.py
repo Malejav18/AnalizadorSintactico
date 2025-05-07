@@ -264,7 +264,7 @@ class LL1Interpreter:
                         top2 = self.stack.pop()
                         if top2 not in non_terminals:
                             arr.append(top2)
-                            print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: \"{exp}\" o \"{top2}\"")
+                            print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: \"{exp}\", \"{top2}\"")
                         else:
                             print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: \"{exp}\"")
                     except:
