@@ -80,3 +80,10 @@ resultado_lexico.txt
 ```
 <1,24> Error sintactico: se encontro: “,”; se esperaba: “]”.
 ```
+
+Los resultados del analizador sintáctico se imprimirán en la terminal. 
+
+En caso de que la cadena sea aceptada se mostrará lo siguiente: 
+
+En caso de que la cadena NO sea aceptada se mostrará lo siguiente: 
+
