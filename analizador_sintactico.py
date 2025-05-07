@@ -62,7 +62,7 @@ productions = {
     'while_tail': [['else', 'tk_dos_puntos', 'loop_block'],[]],
     
     'for_stmt': [['for', 'id', 'in', 'loop_iterable', 'tk_dos_puntos', 'loop_block']],  # Instrucción for
-    'loop_iterable': [['range', 'tk_par_izq', 'items_tuple', 'tk_par_der'], ['tk_corchete_izq', 'items_array', 'tk_corchete_der'], ['id', 'factor_tail'], ['self', 'factor_tail'], ['tk_par_izq', 'items_tuple', 'tk_par_der']],  # Rango de números o ID
+    'loop_iterable': [['range', 'tk_par_izq', 'items_tuple', 'tk_par_der'], ['tk_corchete_izq', 'items_array', 'tk_corchete_der'], ['id', 'factor_tail'], ['self', 'factor_tail'], ['tk_par_izq', 'items_tuple', 'tk_par_der'],['tk_cadena']],  # Rango de números o ID
     
     'try_stmt': [['try', 'tk_dos_puntos', 'loop_block', 'try_stmt_tail']], # try: except: finally:
     'try_stmt_tail': [['except_stmt', 'finally_stmt']],
@@ -123,6 +123,7 @@ productions = {
     'items_array_rest': [
         ['tk_coma', 'items_rest_tail'],
         ['tk_dos_puntos', 'items_array_tail'],   # text[i:j]
+        ['for','id','in','loop_iterable'],
         []
     ],
     'items_array_tail': [
@@ -260,8 +261,8 @@ class LL1Interpreter:
         while self.stack:
             top = self.stack.pop()  # Obtener el símbolo en la cima de la pila
             tok = tipo_tk(self.current_token())
-            if tok in tokens:
-                res=tokens[tok]
+            if tok in char_tokens:
+                res=char_tokens[tok]
             else:
                 res=tok
             if top == 'ε':  # Ignorar ε
@@ -272,23 +273,16 @@ class LL1Interpreter:
                     self.debug(f"Consumir '{tok}'")
                     self.pos += 1
                 else:
-                    if top in tokens:
-                        exp=tokens[top]
+                    if top in char_tokens:
+                        exp=char_tokens[top]
                     else:
                         exp=top
-                        arr = [exp]
-                        if exp == 'TAB':
-                            print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: Falla en Indentacion")
-                            return False
-                        try:
-                            top2 = self.stack.pop()
-                            if top2 not in non_terminals:
-                                arr.append(top2)
-                                print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: \"{exp}\" o \"{top2}\"")
-                            else:
-                                print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: \"{exp}\"")
-                        except:
-                            print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: \"{exp}\"")
+
+                    if exp == 'TAB':
+                        print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: Falla en Indentacion")
+                        return False
+                    else:
+                        print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: \"{exp}\"")
                     return False
             else:  # Si es un no terminal
                 rule = self.table.get(top, {}).get(tok)
@@ -297,14 +291,18 @@ class LL1Interpreter:
                     for i in self.table.get(top, {}).keys():
                         if(self.table.get(top, {}).get(i)==[]):
                             continue
-                        elif i in tokens:
-                            exp= exp+ '"'+tokens[i]+'", '
+                        elif i in char_tokens:
+                            exp= exp+ '"'+char_tokens[i]+'", '
                         else:
                             exp= exp+ '"'+i+'", '
                     try:
-                        top2 = self.stack.pop()
+                        top2=self.stack.pop()
+                        if top2 not in char_tokens:
+                            exp2 = self.stack.pop() 
+                        else: 
+                            exp2= char_tokens[top2]
                         if top2 not in non_terminals:
-                            print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: {exp[:-2]} o {top2}")
+                            print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: {exp[:-2]}, \"{exp2}\"")
                         else:
                             print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: {exp[:-2]}")
                     except:
@@ -388,7 +386,7 @@ else:
         print(f"Error: El archivo '{archivo_entrada}' no se encontró.")
 
 first = compute_first()  # Calcular FIRST
-for token_type in palabras_reservadas|tokens.keys()|tipos_datos.keys():
+for token_type in palabras_reservadas|char_tokens.keys()|tipos_datos.keys():
     if token_type != 'SKIP':
         first[token_type] = {token_type}
 first['id'] = {'id'}
