@@ -1,43 +1,46 @@
-from collections import defaultdict
-from analizador_lexico import *
-import sys
+from collections import defaultdict  # Importa defaultdict para estructuras de datos con valores por defecto
+from analizador_lexico import *     # Importa todos los tokens y funciones del analizador léxico (definiciones de tokens)
+import sys                          # Permite acceder a funciones del sistema, como la entrada y salida estándar
 
 # Gramática de la producción
 productions = {
-    'stmts':[['stmt','stmts_','EOF']],
-    'stmts_':[['stmt','stmts_'],[]],
-    'stmt': [['simple_stmts'],['complx']],
-    'simple_stmts':[['simple_stmt','NEWLINE']],
-    'simple_stmt':[['id','assign_stmt'], ['self','assign_stmt'], ['return_stmt'], ['print_stmt'], ['import_stmt'], ['pass']],
+    'stmts':[['stmt','stmts_','EOF']],  # Programa completo: una o más sentencias y fin de archivo
+    'stmts_':[['stmt','stmts_'],[]],    # Lista recursiva de sentencias o vacío
+    'stmt': [['simple_stmts'],['complx']],  # Una sentencia puede ser simple o compleja
+    'simple_stmts':[['simple_stmt','NEWLINE']],  # Sentencia simple seguida de salto de línea
+    'simple_stmt':[['id','assign_stmt'], ['self','assign_stmt'], ['return_stmt'], 
+                   ['print_stmt'], ['import_stmt'], ['pass']],  # Sentencias básicas
     'complx': [['def', 'def_stmt'], ['if_stmt'], ['while_stmt'], ['for_stmt'], ['class_stmt'], ['try_stmt']],  # stmt → assign_stmt | def_stmt | if_stmt | return_stmt
-    'def_stmt': [['def_init_stmt'], ['def_normal_stmt']],
+    'def_stmt': [['def_init_stmt'], ['def_normal_stmt']], # Funciones __init__ o normales
     'def_init_stmt': [['__init__', 'tk_par_izq', 'param_list', 'tk_par_der', 'tk_dos_puntos','block']],
     'def_normal_stmt': [['id', 'tk_par_izq', 'param_list', 'tk_par_der', 'tk_dos_puntos','block']],
-    "param_list": [["id", "param_structure", "param_list_rest"],["self", "param_structure", "param_list_rest"],[]],  # param_list → id param_list_rest | ε
-    "param_list_rest": [["tk_coma", "param_list"], []],  # param_list_rest → , id param_list_rest | ε
+    "param_list": [["id", "param_structure", "param_list_rest"],["self", "param_structure", "param_list_rest"],[]],  # Lista de parámetros opcionales
+    "param_list_rest": [["tk_coma", "param_list"], []],  # Comas adicionales
     "param_structure": [["tk_dos_puntos", "param_list_complex"],[]],  # param_structure → id : tipos_datos | id : tipo_lista
-    "param_list_complex": [['tipo_lista', "tk_corchete_izq",'lista_tipos_datos', "tk_corchete_der"], ["tk_corchete_izq", 'tipos_datos', "tk_corchete_der"], ["tipos_datos"], []],  # param_list_complex → id param_list_rest | ε
-    "param_list_rest_2": [["tk_coma", "id", "param_list_rest_2"], []],  # param_list_rest_2 → , id param_list_rest_2 | ε
-    
+    "param_list_complex": [['tipo_lista', "tk_corchete_izq",'lista_tipos_datos', "tk_corchete_der"], ["tk_corchete_izq", 'tipos_datos', "tk_corchete_der"], ["tipos_datos"], []],  # Tipos complejos como listas, sets, etc.
+    "param_list_rest_2": [["tk_coma", "id", "param_list_rest_2"], []],  # Lista adicional de parámetros
+    # Tipos de datos y listas de tipos
     "lista_tipos_datos" : [["tipos_datos", "lista_tipos_datos_rest"], []],  # lista_tipos_datos → tipos_datos lista_tipos_datos_rest | ε
     "lista_tipos_datos_rest" : [["tk_coma", "tipos_datos", "lista_tipos_datos_rest"], []],  # lista_tipos_datos_rest → , tipos_datos lista_tipos_datos_rest | ε
     'tipos_datos': [['int'], ['float'], ['str'], ['bool']],  # tipos_datos → int | float | str | bool
     'tipo_lista': [['list'], ['set'], ['dict'], ['tuple']],  # tipo_lista → list | set | dict | tuple]
-    
+    # Sentencias return, print, import
     'return_stmt': [['return', 'expr']],  # Instrucción de retorno
     'print_stmt': [['print', 'tk_par_izq', 'print_expr', 'tk_par_der']],  # Sentencia de impresión
     'print_expr': [['expr', 'print_tail'], []],
     'print_tail': [['tk_coma', 'expr', 'print_tail'], []],
     'import_stmt': [['import', 'id_list'], ['from', 'id', 'import', 'id_list']],  # Instrucción de importación
-
+    # Clases
     'class_stmt': [['class', 'id', 'class_body']],
     'class_body': [
         ['tk_dos_puntos', 'block'],  # class_body → : stmt
         ['tk_par_izq', 'id', 'tk_par_der', 'tk_dos_puntos', 'block']  # class_body → ( ID ) : stmt
     ],
-    'block':[['NEWLINE','TAB', 'stmts_','TABend'],['simple_stmts']],
+    # Bloques de código
+    'block':[['NEWLINE','TAB', 'stmts_','TABend'],['simple_stmts']], # Bloques indentados o simples
     'id_list': [['id', 'id_list_rest']],
     'id_list_rest': [['tk_coma', 'id', 'id_list_rest'], ['as', 'id'], []],
+    # Sentencias de asignación
     'assign_stmt': [['assign_op', 'expr'],['factor_tail', 'assignment']],
     'assignment': [['assign_op', 'expr'], []],  # Asignación a atributo
     'assign_op': [
@@ -50,6 +53,7 @@ productions = {
         ['tk_mayor'],
         ['tk_mod_asig']
     ],
+    # Bucles y condicionales
     'loop_stmt': [['simple_stmt_loop'], ['complx'], ['NEWLINE']],
     'simple_stmt_loop': [['id', 'assign_stmt'], ['return_stmt'], ['print_stmt'], ['import_stmt'], 
                         ['break'], ['continue'], ['pass']],
@@ -60,10 +64,9 @@ productions = {
     'if_tail': [['elif', 'condition', 'tk_dos_puntos', 'loop_block', 'if_tail'], ['else', 'tk_dos_puntos', 'loop_block'],[]],
     'while_stmt': [['while', 'condition', 'tk_dos_puntos', 'loop_block', 'while_tail']],  # Instrucción while
     'while_tail': [['else', 'tk_dos_puntos', 'loop_block'],[]],
-    
     'for_stmt': [['for', 'id', 'in', 'loop_iterable', 'tk_dos_puntos', 'loop_block']],  # Instrucción for
-    'loop_iterable': [['range', 'tk_par_izq', 'items_tuple', 'tk_par_der'], ['tk_corchete_izq', 'items_array', 'tk_corchete_der'], ['id', 'factor_tail'], ['self', 'factor_tail'], ['tk_par_izq', 'items_tuple', 'tk_par_der'],['tk_cadena']],  # Rango de números o ID
-    
+    'loop_iterable': [['range', 'tk_par_izq', 'items_tuple', 'tk_par_der'], ['tk_corchete_izq', 'items_array', 'tk_corchete_der'], ['id', 'factor_tail'], ['self', 'factor_tail'], ['tk_par_izq', 'items_tuple', 'tk_par_der']],  # Rango de números o ID
+    # Try/Except
     'try_stmt': [['try', 'tk_dos_puntos', 'loop_block', 'try_stmt_tail']], # try: except: finally:
     'try_stmt_tail': [['except_stmt', 'finally_stmt']],
     'except_stmt': [['except', 'except_e', 'tk_dos_puntos', 'loop_block', 'except_try'], []],
@@ -71,13 +74,13 @@ productions = {
     'except_e': [['id'], []],
     'try_else': [['else', 'tk_dos_puntos', 'loop_block'], []],
     'finally_stmt': [['finally', 'tk_dos_puntos', 'loop_block'], []],
-
+    # Listas y expresiones numéricas
     'num_list': [['num', 'num_list_rest'],['id'],  []],
     'num_list_rest': [['tk_coma', 'num', 'num_list_rest'],[]],
     'num': [['tk_entero','num.'],['tk_punto','tk_entero']],
     'num.':[['tk_punto','num.num'],[]],
     'num.num':[['tk_entero'],[]],    
-
+    # Condiciones y expresiones
     'condition': [['expr', 'condition_tail'], ['tk_par_izq','condition', 'tk_par_der'], ['True'], ['False']],
     'condition_tail': [['in', 'id'], ['comp_op', 'expr'], []],
     'comp_op': [['tk_igual'], ['tk_distinto'], ['tk_menor'], ['tk_mayor'], ['tk_menor_igual'], ['tk_mayor_igual']],
@@ -90,48 +93,24 @@ productions = {
               []],
     'term': [['factor', 'term_']],
     'term_': [['tk_mult', 'factor', 'term_'], ['tk_div', 'factor', 'term_'], ['tk_modulo', 'factor', 'term_'], []],
-
+    # Conjuntos, diccionarios, tuplas y arreglos
     'set_dict': [['items_set'], ['items_dict'], []],  # Un conjunto puede ser una lista de elementos o un diccionario
-
     'items_set': [['items_rest'], []],  # Un conjunto puede ser una lista de elementos
-
     'items_dict': [['pair', 'dict_rest'], []],  # Un diccionario puede ser un par de clave:valor seguido de más pares
     'pair': [['tk_dos_puntos', 'expr']],  # par → ID: expr (clave: valor)
     'dict_rest': [['tk_coma', 'expr', 'pair', 'dict_rest'], []],  # dict_rest → , pair dict_rest | ε
 
-    'items_tuple': [
-        ['expr', 'items_rest'], # Mínimo 1 para ser tupla
-        []
-        ],
-    'items_rest': [
-        ['tk_coma', 'items_rest_tail'], # Más elementos en la tupla
-        []
-    ],
-    'items_rest_tail': [
-        ['expr', 'items_rest'],
-        []
-    ],
-    'items_array': [
-        ['tk_dos_puntos', 'items_dos_puntos'],
-        ['expr', 'items_array_rest'], 
-        []
-        ],
-    'items_dos_puntos': [
-        ['expr'],
-        [],
-    ],
-    'items_array_rest': [
-        ['tk_coma', 'items_rest_tail'],
-        ['tk_dos_puntos', 'items_array_tail'],   # text[i:j]
-        ['for','id','in','loop_iterable','list_if'],
-        []
-    ],
+    'items_tuple': [['expr', 'items_rest'], []], # Mínimo 1 para ser tupla
+    'items_rest': [['tk_coma', 'items_rest_tail'], []], # Más elementos en la tupla
+    'items_rest_tail': [['expr', 'items_rest'],[]],
+    'items_array': [['tk_dos_puntos', 'items_dos_puntos'],['expr', 'items_array_rest'], []],
+    'items_dos_puntos': [['expr'],[],],
+    'items_array_rest': [['tk_coma', 'items_rest_tail'],
+                         ['tk_dos_puntos', 'items_array_tail'], 
+                         ['for','id','in','loop_iterable','list_if'], []],
     'list_if':[['if','condition'],[]],
-    'items_array_tail': [
-        ['expr', 'items_array_rest'],
-        ['expr'],
-        []
-    ],
+    'items_array_tail': [['expr', 'items_array_rest'],['expr'],[]],
+    # Factores (componentes básicos de expresiones)
     'factor': [['tk_par_izq', 'expr', 'tk_par_der'], 
                ['id', 'factor_tail'], 
                ['self', 'factor_tail'],
@@ -262,8 +241,8 @@ class LL1Interpreter:
         while self.stack:
             top = self.stack.pop()  # Obtener el símbolo en la cima de la pila
             tok = tipo_tk(self.current_token())
-            if tok in char_tokens:
-                res=char_tokens[tok]
+            if tok in tokens:
+                res=tokens[tok]
             else:
                 res=tok
             if top == 'ε':  # Ignorar ε
@@ -274,16 +253,23 @@ class LL1Interpreter:
                     self.debug(f"Consumir '{tok}'")
                     self.pos += 1
                 else:
-                    if top in char_tokens:
-                        exp=char_tokens[top]
+                    if top in tokens:
+                        exp=tokens[top]
                     else:
                         exp=top
-
-                    if exp == 'TAB':
-                        print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: Falla en Indentacion")
-                        return False
-                    else:
-                        print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: \"{exp}\"")
+                        arr = [exp]
+                        if exp == 'TAB':
+                            print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: Falla en Indentacion")
+                            return False
+                        try:
+                            top2 = self.stack.pop()
+                            if top2 not in non_terminals:
+                                arr.append(top2)
+                                print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: \"{exp}\" o \"{top2}\"")
+                            else:
+                                print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: \"{exp}\"")
+                        except:
+                            print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: \"{exp}\"")
                     return False
             else:  # Si es un no terminal
                 rule = self.table.get(top, {}).get(tok)
@@ -292,18 +278,14 @@ class LL1Interpreter:
                     for i in self.table.get(top, {}).keys():
                         if(self.table.get(top, {}).get(i)==[]):
                             continue
-                        elif i in char_tokens:
-                            exp= exp+ '"'+char_tokens[i]+'", '
+                        elif i in tokens:
+                            exp= exp+ '"'+tokens[i]+'", '
                         else:
                             exp= exp+ '"'+i+'", '
                     try:
-                        top2=self.stack.pop()
-                        if top2 not in char_tokens:
-                            exp2 = self.stack.pop() 
-                        else: 
-                            exp2= char_tokens[top2]
+                        top2 = self.stack.pop()
                         if top2 not in non_terminals:
-                            print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: {exp[:-2]}, \"{exp2}\"")
+                            print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: {exp[:-2]} o {top2}")
                         else:
                             print(f"<{sacar_pos(self.current_token())[0]},{sacar_pos(self.current_token())[1]}> Error sintactico: se encontro: \"{res}\"; se esperaba: {exp[:-2]}")
                     except:
@@ -387,7 +369,7 @@ else:
         print(f"Error: El archivo '{archivo_entrada}' no se encontró.")
 
 first = compute_first()  # Calcular FIRST
-for token_type in palabras_reservadas|char_tokens.keys()|tipos_datos.keys():
+for token_type in palabras_reservadas|tokens.keys()|tipos_datos.keys():
     if token_type != 'SKIP':
         first[token_type] = {token_type}
 first['id'] = {'id'}
