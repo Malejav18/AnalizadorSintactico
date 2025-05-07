@@ -123,9 +123,10 @@ productions = {
     'items_array_rest': [
         ['tk_coma', 'items_rest_tail'],
         ['tk_dos_puntos', 'items_array_tail'],   # text[i:j]
-        ['for','id','in','loop_iterable'],
+        ['for','id','in','loop_iterable','list_if'],
         []
     ],
+    'list_if':[['if','condition'],[]],
     'items_array_tail': [
         ['expr', 'items_array_rest'],
         ['expr'],
